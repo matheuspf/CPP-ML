@@ -18,6 +18,9 @@ struct TrustRegion
 		Mat hx = hessian(x);
 
 
+		//db(x.transpose(), "       ", gx.transpose(), "\n\n", hx); exit(0);
+
+
 		for(int iter = 0; iter < maxIter; ++iter)
 		{
 			Vec dir = static_cast<Direction&>(*this).direction(function, gradient, hessian, x, delta, fx, gx, hx);
@@ -25,7 +28,11 @@ struct TrustRegion
 			Vec y = x + dir;
 			double fy = function(y);
 
-			double rho = (fx - fy) / (-gx.dot(dir) - 0.5 * dir.dot(hx * dir));
+			double rho = (fx - fy) / (-gx.dot(dir) - 0.5 * dir.transpose() * hx * dir);
+
+
+			//db(function(x), "      ", rho, "       ", x.transpose(), "     ", dir.transpose(), "\n\n\n");
+			//db((fx - fy), "      ", (-gx.dot(dir) - 0.5 * dir.transpose() * hx * dir), "       ", x.transpose(), "     ", dir.transpose(), "\n\n\n");
 
 
 			if(rho < EPS && delta == maxDelta)

@@ -20,9 +20,9 @@ int main ()
 {
 	DogLeg cp;
 
-	cp.maxIter = 1e3;
+	cp.maxIter = 1e1;
 
-	Vec x = Vec::Constant(10, 1.2);
+	Vec x = Vec::Constant(2, 5.0);
 
 	x = cp(Rosenbrock{}, x);
 

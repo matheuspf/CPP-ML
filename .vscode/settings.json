@@ -3,6 +3,7 @@
         "cmath": "cpp",
         "complex": "cpp",
         "iosfwd": "cpp",
-        "tuple": "cpp"
+        "tuple": "cpp",
+        "functional": "cpp"
     }
 }

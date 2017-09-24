@@ -18,15 +18,21 @@ int main ()
 {
     BFGS<> bfgs;
 
+    bfgs.maxIter = 1e3;
+    bfgs.gTol = 1e-4;
 
-    Vec x = Vec::Constant(100, 1.2);
+
+    Vec x = Vec::Constant(500, 5.0);
 
     //Vec x(2); x << -1.2, 1;
-    
-    DB(benchmark([&]
+
+
+    benchmark([&]
     {
         x = bfgs(Rosenbrock(), x);
-    }));
+    });
+
+    DB(x.transpose());
 
 
     return 0;

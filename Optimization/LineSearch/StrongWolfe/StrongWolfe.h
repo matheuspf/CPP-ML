@@ -7,7 +7,7 @@
 struct StrongWolfe : public LineSearch<StrongWolfe>
 {
 	StrongWolfe (double a0 = 1.0, double c1 = 1e-4, double c2 = 0.9, double aMax = 10.0, 
-				 double rho = goldenRatio, int maxIterBrack = 20, int maxIterInt = 20, double tol = EPS) :
+				 double rho = goldenRatio, int maxIterBrack = 20, int maxIterInt = 1e2, double tol = EPS) :
 				 a0(a0), c1(c1), c2(c2), aMax(aMax), rho(rho), 
 				 maxIterBrack(maxIterBrack), maxIterInt(maxIterInt), tol(tol)
 	{
@@ -93,13 +93,16 @@ struct StrongWolfe : public LineSearch<StrongWolfe>
 			else
 			{
 				if(abs(ga) < c2 * abs(g0))
-					return a;
+					break;
 
 				if(ga * (u - l) > 0.0)
 					u = l, fu = fl, gu = gl;
 
 				l = a, fl = fa, gl = ga;
 			}
+
+			if(u - l < 2 * EPS)
+				break;
 		}
 
 		return a;

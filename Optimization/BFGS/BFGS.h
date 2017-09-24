@@ -28,9 +28,13 @@ struct BFGS
         Mat In = Mat::Identity(N, N);
 
         Mat hess = initialHessian(function, gradient, x0);
+        //Mat hess = hessianFD(function)(x0);
 
         Vec g0 = gradient(x0);
         Vec x1, g1, dir, s, y;
+
+        // db(g0, "\n\n");
+        // db(hess); exit(0);
 
 
         for(int iter = 0; iter < maxIter; ++iter)
@@ -38,6 +42,11 @@ struct BFGS
             dir = -hess * g0;
 
             double alpha = lineSearch(function, gradient, x0, dir);
+
+            // db(iter, "      ", alpha, "      ", function(x0), '\n');
+            // db(x0.transpose(), "      ", dir.transpose(), "\n\n\n");
+            // FOR(i, N) if(isnan(x0(i))) exit(0);
+
 
             x1 = x0 + alpha * dir;
 
@@ -47,8 +56,11 @@ struct BFGS
             y = g1 - g0;
 
 
-            if(s.dot(y) <= 0.0 || s.dot(s) < sTol || y.dot(y) < yTol || g1.dot(g1) < gTol)
-               break;
+            // if(s.dot(y) <= 0.0 || g1.norm() < gTol)
+            //    break;
+
+            if(g1.norm() < gTol)
+                break;
 
 
             double rho = 1.0 / y.dot(s);
@@ -57,8 +69,6 @@ struct BFGS
 
             x0 = x1;
             g0 = g1;
-
-            //DB(x0.transpose());
         }
 
         return x1;
@@ -75,11 +85,8 @@ struct BFGS
     LineSearch lineSearch;
     InitialHessian initialHessian;
 
-
-    double sTol = 1e-8;
-    double yTol = 1e-8;
     double gTol = 1e-8;
-    int maxIter = 1e2;
+    int maxIter = 1e3;
 };
 
 
@@ -87,19 +94,28 @@ struct BFGS
 
 struct BFGS_Diagonal
 {
-    BFGS_Diagonal (double h = 1e-8) : h(h) {}
+    BFGS_Diagonal (double h0 = 1e-8) : h0(h0) {}
 
     template <class Function, class Gradient>
-    Mat operator () (Function, Gradient gradient, Vec x)
+    Mat operator () (Function function, Gradient gradient, Vec x)
     {
+        double fx = function(x), h = h0;
+
+        if(fx < 1e-6 || fx > 1e-6)
+            h = 1e-4;
+
         Mat hess = Mat::Constant(x.rows(), x.rows(), 0.0);
 
-        hess.diagonal() = (gradient((x.array() + h).matrix()) - gradient((x.array() - h).matrix())) / (2*h);
+        hess.diagonal() = (2*h) / (gradient((x.array() + h).matrix()) - gradient((x.array() - h).matrix())).array();
+
+        //DB(hess.diagonal()); exit(0);
 
         return hess;
     }
 
-    double h;
+    
+
+    double h0;
 };
 
 
