@@ -140,7 +140,7 @@ struct BayesianLR
 
 			alpha = gamma / (m.dot(m));
 
-			beta = (N - gamma) * (y - X * m).dot(y - X * m);
+			beta = (N - gamma) / (y - X * m).dot(y - X * m);
 
 			//DB(alpha << "    " << beta);
 
