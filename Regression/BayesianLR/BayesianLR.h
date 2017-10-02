@@ -3,19 +3,14 @@
 
 #include "../../Modelo.h"
 
-#include "../../Optimization/Newton/Newton.h"
-
-#include "../../Optimization/MDE/MDE.h"
-
 
 struct BayesianLR
 {
-	BayesianLR (double sigmaP = 1e1, double sigBias = 1e-8) : sigmaP(sigmaP), sigBias(sigBias)
-	{}
+	BayesianLR (double sigmaP = 1e1, double sigBias = 1e-8) : sigmaP(sigmaP), sigBias(sigBias) {}
 
 
 
-	BayesianLR& learn (Mat X, const Vec& y)
+	BayesianLR& fit (Mat X, const Vec& y)
 	{
 		assert(X.rows() == y.rows() && "Number of dimensions between 'X' and 'y' differ");
 
@@ -30,25 +25,27 @@ struct BayesianLR
 		Mat Im = Mat::Identity(M, M);
 		In(N-1, N-1) = 0.0;
 
-		tie(sigmaP, sigma) = optSigmas(X, y);
+		optSigmas(X, y);
 		//sigmaP = sigma = 1.0;
 
 		DB(sigmaP << "     " << sigma << "\n\n");
 
 
-		if(N <= M)
+		//if(N <= M)
 			A = (X.transpose() * X + (sigma / sigmaP) * In).colPivHouseholderQr().solve(Mat::Identity(N, N));
 
-		else
-			A = sigma * (sigmaP * In - sigmaP * X.transpose() *
-				(X * X.transpose() + (sigma / sigmaP) * Im).colPivHouseholderQr().solve(Mat::Identity(M, M)) * X);
+		// else
+		// 	A = sigma * (sigmaP * In - sigmaP * X.transpose() *
+		// 		(X * X.transpose() + (sigma / sigmaP) * Im).colPivHouseholderQr().solve(Mat::Identity(M, M)) * X);
 
 		
 		AXw = A * X.transpose() * y;
 
 		bias = AXw(N-1);
 
-		AXw = Vec(AXw.head(N-1));
+		AXw.conservativeResize(N-1);
+
+		//AXw = Vec(AXw.head(N-1));
 
 
 		return *this;
@@ -114,7 +111,7 @@ struct BayesianLR
 
 
 
-	pair<double, double> optSigmas (Mat X, const Vec& y, double eps = 1e-8, int maxIter = 100)
+	void optSigmas (Mat X, const Vec& y, double eps = 1e-8, int maxIter = 100)
 	{
 		Mat Xt = X.transpose() * X;
 
@@ -142,198 +139,14 @@ struct BayesianLR
 
 			beta = (N - gamma) / (y - X * m).dot(y - X * m);
 
-			//DB(alpha << "    " << beta);
+			db(maxIter, alpha, beta);
 
 
 		} while(abs(alpha - oldAlpha) + abs(beta - oldBeta) > 2*eps && maxIter--);
 
-
-		return make_pair(1.0 / alpha, 1.0 / beta);
+		sigmaP = 1.0 / alpha;
+		sigma = 1.0 / beta;
 	}
-
-
-
-
-
-
-	// pair<double, double> optSigmas (const Mat& X, const Vec& y, double eps = 1e-3)
-	// {
-
-	// 	Mat Xt = X * X.transpose();
-
-	// 	EigenSolver<Mat> es(Xt);
-
-	// 	ArrayXd eigVal = es.eigenvalues().real().array();
-
-	// 	double alpha = 1.0, beta = 1.0, oldAlpha, oldBeta;
-
-	// 	do
-	// 	{
-	// 		oldAlpha = alpha, oldBeta = beta;
-
-
-	// 		Mat A = alpha * Xt + beta * Mat::Identity(M, M);
-
-	// 		Mat A0 = Xt + (beta / alpha) * Mat::Identity(M, M);
-
-	// 		Mat A1 = (alpha / beta) * Xt + Mat::Identity(M, M);
-
-
-	// 		double g0 = (eigVal / (alpha * eigVal + beta)).sum();
-
-	// 		double g1 = (1.0 / (alpha * eigVal + beta)).sum();
-
-			
-	// 		alpha = sqrt(double(y.transpose() * A0.inverse() * y) / g0);
-
-	// 		beta = (double(y.transpose() * A1.inverse() * y) / g1);
-
-
-	// 	} while(abs(alpha - oldAlpha) > eps && abs(beta - oldBeta) > eps);
-
-
-	// 	return make_pair(alpha, beta);
-	// }
-
-
-
-
-
-
-
-
-
-
-	// pair<double, double> optSigmas (const Mat& X, const Vec& y, double eps = 1e-3)
-	// {
-	// 	auto func = [&](const Vec& x) -> double
-	// 	{
-	// 		int M = X.rows(), N = X.cols();
-	// 		double alpha = x(0), beta = x(1);
-
-	// 		Mat In = Mat::Identity(N, N);
-	// 		In(N-1, N-1) = 0.0;
-
-	// 		Mat A = alpha * In + beta * X.transpose() * X;
-
-	// 		Vec m = beta * A.inverse() * X.transpose() * y;
-
-			
-	// 		return (N / 2.0) * log(alpha) + (M / 2.0) * log(beta) - 
-	// 			   (beta / 2.0) * (y - X * m).dot(y - X * m) + (alpha / 2.0) * m.dot(m) -
-	// 			   0.5 * log(A.determinant()) - (M / 2.0) * log(2.0 * pi());
-	// 	};
-
-	// 	auto grad = [&](const Vec& x) -> Vec
-	// 	{
-	// 		int M = X.rows(), N = X.cols();
-	// 		double alpha = x(0), beta = x(1);
-
-	// 		Mat A = alpha * Mat::Identity(N, N) + beta * X.transpose() * X;
-
-	// 		Vec m = beta * A.inverse() * X.transpose() * y;
-
-
-	// 		EigenSolver<Mat> es(X.transpose() * X);
-
-	// 		ArrayXd eigVal = es.eigenvalues().real().array();
-
-
-
-	// 		Vec grad(2);
-
-	// 		grad(0) = (N / (2.0 * alpha)) - 0.5 * m.dot(m) - 0.5 * (1.0 / (eigVal + alpha)).sum();
-
-	// 		grad(1) = (M / (2.0 * beta)) - 0.5 * (y - X * m).dot(y - X * m) - (eigVal / (alpha + eigVal)).sum() / (2.0 * beta);
-
-	// 		return grad;
-	// 	};
-
-	// 	auto hess = [&](const Vec& x) -> Mat
-	// 	{
-	// 		int M = X.rows(), N = X.cols();
-	// 		double alpha = x(0), beta = x(1);
-
-
-	// 		EigenSolver<Mat> es(X.transpose() * X);
-
-	// 		ArrayXd eigVal = es.eigenvalues().real().array();
-
-
-	// 		Mat hess(2, 2);
-
-	// 		hess(0, 0) = 0.5 * (1.0 / (pow(eigVal, 2) + alpha).sum()) - M / (2.0 * alpha * alpha);
-	// 		hess(0, 1) = hess(1, 0) = 0.0;
-	// 		hess(1, 1) = (eigVal / (alpha + eigVal)).sum() / (2.0 * beta * beta) - M / (2.0 * beta * beta);
-
-	// 		return hess;
-	// 	};
-
-
-
-	// 	// Vec x(2);
-	// 	// x << 1.0, 1.0;
-
-	// 	// Newton<StrongWolfe, CholeskyIdentity> newton;
-
-	// 	// x = newton(func, x);
-
-
-
-	// 	struct OptFunction : mde::Function<3>
-	// 	{
-	// 		OptFunction (const Mat& X, const Vec& y) : X(X), y(y)
-	// 		{
-	// 			lowerBounds = {1e-5, 1e-5};
-	// 			upperBounds = {1e5, 1e5};
-	// 		}
-		
-	// 		double operator () (const Vector& x)
-	// 		{
-	// 			static Vec v(2);
-
-	// 			v(0) = x[0], v(1) = x[1];
-
-	// 			return lol(v);
-	// 		}
-
-
-	// 		double lol (const Vec& x)
-	// 		{
-	// 			int M = X.rows(), N = X.cols();
-	// 			double alpha = x(0), beta = x(1);
-	
-	// 			Mat In = Mat::Identity(N, N);
-	// 			In(N-1, N-1) = 0.0;
-	
-	// 			Mat A = alpha * In + beta * X.transpose() * X;
-	
-	// 			Vec m = beta * A.inverse() * X.transpose() * y;
-	
-				
-	// 			return (N / 2.0) * log(alpha) + (M / 2.0) * log(beta) - 
-	// 				   (beta / 2.0) * (y - X * m).dot(y - X * m) + (alpha / 2.0) * m.dot(m) -
-	// 				   0.5 * log(A.determinant()) - (M / 2.0) * log(2.0 * pi());
-	// 		}
-
-	// 		const Mat& X;
-	// 		const Vec& y;
-	// 	};
-
-	// 	mde::Parameters params;
-	// 	params.popSize = 100;
-	// 	params.children = 5;
-	// 	params.maxIter = 500;
-	// 	params.debug = true;
-
-	// 	mde::MDE<OptFunction> mde(params, OptFunction(X, y));
-
-	// 	auto x = mde();
-
-
-	// 	return make_pair(x[0], x[1]);
-	// }
-
 
 
 

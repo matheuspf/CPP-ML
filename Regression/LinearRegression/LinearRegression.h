@@ -11,7 +11,7 @@ struct LinearRegression
 
 
 
-	LinearRegression& learn (Mat X, const Vec& y)
+	LinearRegression& fit (Mat X, const Vec& y)
 	{
 		assert(X.rows() == y.rows() && "Number of dimensions between 'X' and 'y' differ");
 
@@ -47,22 +47,22 @@ struct LinearRegression
 
 	double infer (const Vec& x, double y)
 	{
-		return gaussian(y, operator()(x), sigma);
+		return gaussian(y, predict(x), sigma);
 	}
 
 	double infer (const Mat& X, const Vec& y)
 	{
-		return gaussian(y, operator()(X), sigma);
+		return gaussian(y, predict(X), sigma);
 	}
 
 
 
-	double operator () (const Vec& x)
+	double predict (const Vec& x)
 	{
 		return phi.dot(x) + bias;
 	}
 
-	Vec operator () (const Mat& X)
+	Vec predict (const Mat& X)
 	{
 		return (X * phi).array() + bias;
 	}

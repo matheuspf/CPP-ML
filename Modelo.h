@@ -41,6 +41,12 @@ using vd = vector<double>;
 using pd = pair<double, double>;
 
 
+template <class T>
+using VecX = Eigen::Matrix<T, Eigen::Dynamic, 1>;
+
+template <class T>
+using MatX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+
 using Vec = VectorXd;
 using Mat = MatrixXd;
 
@@ -186,6 +192,27 @@ template <bool... Bs>
 ctx bool And_v = And< Bs... >::value;
 
 
+/// Taken from https://bitbucket.org/martinhofernandes/wheels/src/default/include/wheels/meta/type_traits.h%2B%2B?fileviewer=file-view-default#cl-161
+template <typename T, template <typename...> class Template>
+struct IsSpecialization : std::false_type {};
+
+template <template <typename...> class Template, typename... Args>
+struct IsSpecialization<Template<Args...>, Template> : std::true_type {};
+
+
+
+template <class Apply, typename... Args, std::size_t... Is, typename... FuncArgs>
+void applyTuple (Apply apply, std::tuple<Args...>& tup, std::index_sequence<Is...>, FuncArgs&&... funcArgs)
+{
+    const auto& dummie = { ( apply( std::get<Is>(tup), std::forward<FuncArgs>(funcArgs)... ), int{} ) ... };
+}
+
+template <class Apply, typename... Args, typename... FuncArgs>
+void applyTuple (Apply apply, std::tuple<Args...>& tup, FuncArgs&&... funcArgs)
+{
+    return applyTuple(apply, tup, std::make_index_sequence<sizeof...(Args)>(), std::forward<FuncArgs>(funcArgs)...);
+}
+
 
 
 namespace std
@@ -224,6 +251,32 @@ ctx decltype(auto) shift (T&& x, U&& y, Args&&... args)
 
 	return shift(forward<U>(y), forward<Args>(args)...);
 }
+
+
+
+template <class T>
+auto index (const MatX<T>& X, const vector<int>& ids)
+{
+	MatX<T> Y(ids.size(), X.cols());
+
+	for(int i = 0; i < ids.size(); ++i)
+		Y.row(i) = X.row(ids[i]);
+	
+	return Y;
+}
+
+template <class T>
+auto index (const VecX<T>& x, const vector<int>& ids)
+{
+	VecX<T> y(ids.size());
+
+	for(int i = 0; i < ids.size(); ++i)
+		y(i) = x(ids[i]);
+	
+	return y;
+}
+
+
 
 
 

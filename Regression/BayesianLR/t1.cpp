@@ -3,7 +3,7 @@
 #include "../../Preprocessing/Preprocess.h"
 
 
-auto readData (string str)
+auto readData (string str, char del = ' ')
 {
     ifstream in(str);
 
@@ -15,11 +15,12 @@ auto readData (string str)
     while(getline(in, str))
     {
         stringstream ss(str);
-
+        string value;
+        
         int cnt = 0;
-        double aux;
 
-        while(ss >> aux) data.push_back(aux), cnt++;
+        while(getline(ss, value, del))
+            data.push_back(stod(value)), cnt++;
 
         if(!N) N = cnt;
         ++M;
@@ -31,9 +32,13 @@ auto readData (string str)
 
     FOR(i, data.size())
     {
-        if(i % N == 0) y(i / N) = data[i];
+        // if(i % N == 0) y(i / N) = data[i];
 
-        else X(i / N, (i % N)-1) = data[i];
+        // else X(i / N, (i % N)-1) = data[i];
+
+        if(i % N == N-1) y(i / N) = data[i];
+        
+        else X(i / N, (i % N)) = data[i];
     }
 
     return make_tuple(X, y);
@@ -44,28 +49,28 @@ auto readData (string str)
 
 int main ()
 {
-    auto [X, y] = readData("reg.txt");
+    auto [X, y] = readData("reg2.txt", ',');
 
-    OneHotEncoding ohe({0, 5, 6});
-    X = ohe.fitTransform(X);
+    // OneHotEncoding ohe({0, 5, 6});
+    // X = ohe.fitTransform(X);
 
     auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.3, 0);
 
-    Standardize st;
-    X_train = st.fitTransform(X_train);
-    X_test = st.transform(X_test);
+    // Standardize st;
+    // X_train = st.fitTransform(X_train);
+    // X_test = st.transform(X_test);
 
 
     BayesianLR blr;
 
-    blr.learn(X_train, y_train);
+    blr.fit(X_train, y_train);
 
     Vec y_pred(y_test.rows());
     
     FOR(i, y_test.rows())
         y_pred(i) = blr(Vec(X_test.row(i)));
 
-    db((y_test - y_pred).norm());
+    db((y_test - y_pred).norm() / y_test.rows());
     
 
 
