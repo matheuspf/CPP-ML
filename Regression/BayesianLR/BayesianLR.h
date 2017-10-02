@@ -28,7 +28,7 @@ struct BayesianLR
 		optSigmas(X, y);
 		//sigmaP = sigma = 1.0;
 
-		DB(sigmaP << "     " << sigma << "\n\n");
+		db("\n", sigmaP, "   ", sigma, "\n\n");
 
 
 		//if(N <= M)
@@ -111,7 +111,7 @@ struct BayesianLR
 
 
 
-	void optSigmas (Mat X, const Vec& y, double eps = 1e-8, int maxIter = 100)
+	void optSigmas (Mat X, const Vec& y, double eps = 1e-8, int maxIter = 10)
 	{
 		Mat Xt = X.transpose() * X;
 
@@ -139,10 +139,9 @@ struct BayesianLR
 
 			beta = (N - gamma) / (y - X * m).dot(y - X * m);
 
-			db(maxIter, alpha, beta);
+			//db(maxIter, alpha, beta);
 
-
-		} while(abs(alpha - oldAlpha) + abs(beta - oldBeta) > 2*eps && maxIter--);
+		} while((abs(alpha - oldAlpha) + abs(beta - oldBeta)) / (alpha + beta) > 2*eps && maxIter--);
 
 		sigmaP = 1.0 / alpha;
 		sigma = 1.0 / beta;

@@ -54,7 +54,7 @@ int main ()
     // OneHotEncoding ohe({0, 5, 6});
     // X = ohe.fitTransform(X);
 
-    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.3, 0);
+    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.3, 42);
 
     // Standardize st;
     // X_train = st.fitTransform(X_train);
