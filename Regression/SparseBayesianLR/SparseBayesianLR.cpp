@@ -68,7 +68,7 @@ int main ()
     Vec y_pred(y_test.rows());
     
     FOR(i, y_test.rows())
-        y_pred(i) = blr(Vec(X_test.row(i)));
+        y_pred(i) = blr.predict(Vec(X_test.row(i)));
 
     db((y_test - y_pred).norm() / y_test.rows());
     
