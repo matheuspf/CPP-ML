@@ -4,12 +4,12 @@
 #include "../Modelo.h"
 
 
-Mat readMat (const string& fName)
+Mat readMat (const string& fName, char delimiter = ' ')
 {
 	ifstream file(fName);
 
 
-	int M = 0, N = -1;
+	int M = 0, N = 0;
 
 	vector<double> buf;
 	
@@ -18,23 +18,23 @@ Mat readMat (const string& fName)
 
 	while(getline(file, str))
 	{
-		stringstream ss(str);
+        stringstream ss(str);
+        string value;
+        
+        int cnt = 0;
 
-		double aux;
-		int cnt = 0;
+        while(getline(ss, value, delimiter))
+            buf.push_back(stod(value)), cnt++;
 
-		while(ss >> aux) buf.pb(aux), ++cnt;
-
-		if(N == -1) N = cnt;
-
-		++M;
+		N = N == 0 ? cnt : N;
+        ++M;
 	}
 
 
-	Mat mat = Eigen::Map<Mat>(&buf[0], N, M);
+	Mat X = Eigen::Map<Mat>(&buf[0], N, M);
 
 
-	return mat.transpose();
+	return X.transpose();
 }
 
 
@@ -81,7 +81,7 @@ auto trainTestSplit (const Mat& X, const Vec& y, double split = 0.3, int rng = 0
 
 struct Normalize
 {
-	Normalize& fit (const Mat& X)
+	Normalize& fit (const Mat& X, ...)
 	{
 		l = X.colwise().minCoeff().transpose();
 		u = X.colwise().maxCoeff();
@@ -94,7 +94,7 @@ struct Normalize
 		return (X.rowwise() - l.transpose()).array().rowwise() / (u - l).transpose().array();
 	}
 
-	Mat fitTransform (const Mat& X)
+	Mat fitTransform (const Mat& X, ...)
 	{
 		return fit(X).transform(X);
 	}
@@ -110,7 +110,7 @@ struct Normalize
 
 struct Standardize
 {
-	Standardize& fit (const Mat& X)
+	Standardize& fit (const Mat& X, ...)
 	{
 		M = X.rows();
 
@@ -127,7 +127,7 @@ struct Standardize
 		return (X.rowwise() - mean.transpose()).array().rowwise() / dev.transpose().array();
 	}
 
-	Mat fitTransform (const Mat& X)
+	Mat fitTransform (const Mat& X, ...)
 	{
 		return fit(X).transform(X);
 	}
