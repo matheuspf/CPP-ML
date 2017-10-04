@@ -277,6 +277,30 @@ auto index (const VecX<T>& x, const vector<int>& ids)
 }
 
 
+Mat inverseMat (const Mat& X)
+{
+	Eigen::LLT<Mat> llt(X);
+
+	if(llt.info() == Eigen::Success)
+		return llt.solve(Mat::Identity(X.rows(), X.rows()));
+	
+	Eigen::ColPivHouseholderQR<Mat> qr(X);
+
+	return qr.inverse();
+}
+
+Vec solveMat (const Mat& X, const Vec& y)
+{
+	Eigen::LLT<Mat> llt(X);
+	
+	if(llt.info() == Eigen::Success)
+		return llt.solve(y);
+	
+	Eigen::ColPivHouseholderQR<Mat> qr(X);
+
+	return qr.solve(y);
+}
+
 
 
 

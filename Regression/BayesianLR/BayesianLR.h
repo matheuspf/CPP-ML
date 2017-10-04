@@ -1,33 +1,109 @@
+/** \file MDE.h
+ * 
+ *  This is an implementation of the Bayesian Linear Regression method.
+ * 
+ *  The hyperparameters are estimated based on an optimization over the evidence function,
+ *  after integrating out the weights of the model.
+ * 
+ *  Basically, it is a regularized least squares, or 'Ridge' regression, without the need 
+ *  for crossvalidation: the 'penalty' are automatically estimated.
+ * 
+ *  For the theory behind the method, see chapter 3 of Bishop's book.
+ * 
+*/
+
+
 #ifndef ML_BAYESIAN_LR_H
 #define ML_BAYESIAN_LR_H
 
 #include "../../Modelo.h"
 
 
+
+/// Stands for Bayesian Linear Regression
 struct BayesianLR
 {
+	/// Nothing to be set here
 	BayesianLR () {}
 
-	BayesianLR& fit (Mat X, const Vec& y)
+	/** The fit method also takes two optional parameters: the maximum number of iterations 
+	 *  to optimize 'alpha' and 'beta', and the minimum tolerance between iterations.
+	**/
+	BayesianLR& fit (Mat X, const Vec& y, int maxIter = 100, double tol = 1e-8)
 	{
-		assert(X.rows() == y.rows() && "Number of dimensions between 'X' and 'y' differ");
+		assert(X.rows() == y.rows() && "Different number of rows between X and y");
 
+		/** This is needed, since we need a column full of 1's for the itercept term.
+		  * Until the moment, this is the easiest and cleanest way I found to do that.
+		  * Although it may not be the fastest way, the optimization iteration procedure, 
+		  * which is O(N^3) per iteration, should dominate this O(M) memory allocation.
+		**/
 		X.conservativeResize(Eigen::NoChange, X.cols() + 1);
 		X.col(X.cols() - 1).array() = 1.0;
 
 
+		/// Number of rows (M) and columns (N)
 		M = X.rows(), N = X.cols();
 
+
+		/// Precomputed values
+		Mat XtX = X.transpose() * X;
+
+		Vec Xy = X.transpose() * y;
+
+
+		/// We need the eigenvalues of XtX.
+		EigenSolver<Mat> es(XtX);
+
+		ArrayXd eigVal = es.eigenvalues().real().array();
+
+
+
 		Mat In = Mat::Identity(N, N);
-		In(N-1, N-1) = 0.0;		
-
-
-		optimizeEvidence(X, y);
-
-
-		sigma = (beta * X.transpose() * X + alpha * In).inverse();
 		
-		mu = beta * sigma * X.transpose() * y;
+		/** Really important stuff here. We should not include a prior over the intercept.
+		  * Actually, doing this, we include a prior, but it is infinitelly flat = uniform.
+		  * This will not penalize any value chosen for the intercept term.
+		**/
+		In(N-1, N-1) = 0.0;
+
+
+		/// For convergence check
+		double oldAlpha = 1e20, oldBeta = 1e20;
+
+		/// Initial values
+		alpha = beta = 1.0;
+
+
+		/// While there's still change in 'alpha' or 'beta'
+		while((abs(alpha - oldAlpha) > tol || abs(beta - oldBeta) > tol) && maxIter--)
+		{
+			/// Old values
+			oldAlpha = alpha, oldBeta = beta;
+
+			/** We will need this matrix later to evaluate the conditional distribution P(y, x).
+			 *  The 'invertMat' tries to apply a Cholesky LLT decomposition. If it does not work,
+			 *  a QR decomposition is applied. If M >> N, it generally wont be necessary.
+			**/
+			sigma = inverseMat(beta * XtX + alpha * In);
+
+			/// This is our weight vector
+			mu = beta * sigma * Xy;
+
+			/// This guy represents the 'effective number of parameters'. See Bishop's book.
+			double gamma = ((beta * eigVal) / (alpha + beta * eigVal)).sum();
+
+			/// New values
+			alpha = gamma / (mu.dot(mu));
+
+			beta = (N - gamma) / (y - X * mu).squaredNorm();
+		}
+
+		/// The intercept is the last term
+		intercept = mu(N-1);
+
+		/// Resize so inference is a simply dot plus an add
+		mu.conservativeResize(N-1);
 
 
 		return *this;
@@ -35,104 +111,17 @@ struct BayesianLR
 
 
 
-
-	double predict (Vec x)
+	/// Predicting values for a vector 'x'
+	double predict (const Vec& x)
 	{
-		x.conservativeResize(N);
-		x(N - 1) = 1.0;
-
-		return mu.dot(x);
+		return mu.dot(x) + intercept;
 	}
 
-	Vec predict (Mat X)
+	/// Predicting values for a whole matrix 'X'
+	Vec predict (const Mat& X)
 	{
-		X.conservativeResize(Eigen::NoChange, N);
-		X.col(N - 1).array() = 1.0;
-
-		return X * mu;
+		return (X * mu).array() + intercept;
 	}
-
-
-
-	void optimizeEvidence (const Mat& X, const Vec& y, double eps = 1e-8, int maxIter = 100)
-	{
-		Mat Xt = X.transpose() * X;
-
-		EigenSolver<Mat> es(Xt);
-
-		Vec eigVal = es.eigenvalues().real();
-
-		Mat In = Mat::Identity(N, N);
-		In(N-1, N-1) = 0.0;
-
-
-		alpha = 1.0, beta = 1.0;
-
-		double oldAlpha, oldBeta;
-		
-		do
-		{
-			oldAlpha = alpha, oldBeta = beta;
-
-			Mat A = alpha * In + beta * Xt;
-
-			Vec m = beta * A.inverse() * X.transpose() * y;
-
-			double gamma = ((beta * eigVal.array()) / (alpha + beta * eigVal.array())).sum();
-
-
-			alpha = gamma / (m.dot(m));
-
-			beta = (N - gamma) / (y - X * m).squaredNorm();
-
-			
-		} while((abs(alpha - oldAlpha) + abs(beta - oldBeta)) / (alpha + beta) > 2*eps && maxIter--);
-	}
-
-
-
-
-
-	// double infer (const Vec& x, double y)
-	// {
-	// 	Vec z = x;
-	// 	z.conservativeResize(z.rows()+1);
-	// 	z(z.rows()-1) = 1.0;
-
-	// 	return gaussian(y, predict(x), z.transpose() * A * z + sigma);
-	// }
-
-	// double infer (const Mat& X, const Vec& y)
-	// {
-	// 	return gaussian(y, predict(X), (X * A * X.transpose()).diagonal().array() + sigma);
-	// }
-
-
-	// double variance (const Vec& x)
-	// {
-	// 	Vec z = x;
-	// 	z.conservativeResize(z.rows()+1);
-	// 	z(z.rows()-1) = 1.0;
-
-	// 	return z.transpose() * A * z + sigma;
-	// }
-
-	// double gaussian (double x, double mu, double sig)
-	// {
-	// 	double diff = x - mu;
-
-	// 	return (1.0 / (sqrt(2*pi()*sig))) * exp(-(0.5 / sig) * diff * diff);
-	// }
-
-	// double gaussian (const Vec& x, const Vec& mu, const Mat& sig)
-	// {
-	// 	Vec diff = x - mu;
-
-	// 	return (1.0 / pow(2*pi()*sig.determinant(), mu.rows() / 2.0)) *
-	// 		   exp(-0.5 * diff.transpose() * sig.inverse() * diff);
-	// }
-
-	
 
 
 
@@ -145,6 +134,9 @@ struct BayesianLR
 	Mat sigma;
 
 	Vec mu;
+
+	double intercept;
+
 };
 
 
