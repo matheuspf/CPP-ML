@@ -83,14 +83,14 @@ struct BayesianLR
 
 			/** We will need this matrix later to evaluate the conditional distribution P(y, x).
 			 *  The 'invertMat' tries to apply a Cholesky LLT decomposition. If it does not work,
-			 *  a QR decomposition is applied. If M >> N, it generally wont be necessary.
+			 *  a QR decomposition is applied. If M > N, it generally wont be necessary.
 			**/
 			sigma = inverseMat(beta * XtX + alpha * In);
 
 			/// This is our weight vector
 			mu = beta * sigma * Xy;
 
-			/// This guy represents the 'effective number of parameters'. See Bishop's book.
+			/// This guy represents the 'effective number of parameters'. See section 3.5.3 of Bishop's book.
 			double gamma = ((beta * eigVal) / (alpha + beta * eigVal)).sum();
 
 			/// New values
@@ -125,17 +125,17 @@ struct BayesianLR
 
 
 
-	int M, N;
+	int M, N;			/// Rows and columns of the design matrix
 
-	double alpha;
+	double alpha;		/// Inverse of the variance of the isotropic Gaussian prior over the weights
 
-	double beta;
+	double beta;		/// Inverse of the variance of the Gaussian conditional distribution P(y | x)
 	
-	Mat sigma;
+	Mat sigma;			/// This guy incorporates the data dependent variance
 
-	Vec mu;
+	Vec mu;				/// After a lot of derivation, this guy acts like the 'weights' of a ordinary linear regression
 
-	double intercept;
+	double intercept;	/// The intercept term
 
 };
 

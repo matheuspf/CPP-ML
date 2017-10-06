@@ -48,7 +48,5 @@ int main ()
     db(dlr.alpha, "     ", dlr.kernel.gamma);
 
 
-    //8.71799    0.001       0.1
-
     return 0;
 }

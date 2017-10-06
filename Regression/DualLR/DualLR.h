@@ -42,7 +42,7 @@ struct DualLR
         M = X.rows(), N = X.cols();     /// Number of rows and columns
         
         /** Here we calculate the kernel matrix K, where \f$ K_{i, j} = kernel(X_i, X_j) \f$
-         *  and add the regularizer on the diagonal. Then, we solve for y, using the solveMat
+         *  and add the regularizer on the diagonal. Then, we solve for y, using the 'solveMat'
          *  function, that attemps to use a Cholesky LLT decomposition. It will not work if
          *  M > N, so a QR decomposition is used instead.
         **/
@@ -75,7 +75,7 @@ struct DualLR
 
     int M, N;           /// Dimensions of the matrix (M - rows, N - columns)
 
-    double alpha;       /// Regularization constant
+    double alpha;       /// Regularization constant - inverse of the variance of the gaussian prior over weights
 
     Kernel kernel;      /// Kernel function
 

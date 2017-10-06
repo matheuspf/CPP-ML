@@ -17,7 +17,7 @@ int main ()
 
     X.conservativeResize(Eigen::NoChange, X.cols()-1);
     
-    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.2, 270001);
+    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.3, 270001);
     
 
     Standardize st;
@@ -25,8 +25,8 @@ int main ()
     X_test = st.transform(X_test);
 
 
-    BayesianLR reg;
-    //LinearRegression reg;
+    //BayesianLR reg;
+    LinearRegression reg;
 
     reg.fit(X_train, y_train);
 
