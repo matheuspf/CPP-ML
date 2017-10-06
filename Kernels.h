@@ -6,11 +6,24 @@
 
 struct LinearKernel
 {
-	template <class X, class Y>
-	auto operator () (const X& x, const Y& y) const
+	LinearKernel (double c = 1.0) : c(c) {}
+
+	double operator () (const Vec& x, const Vec& y) const
 	{
-		return x * y;
+		return x.dot(y) + c;
 	}
+
+	Vec operator () (const Mat& X, const Vec& y) const
+	{
+		return (X * y).array() + c;
+	}
+
+	Mat operator () (const Mat& X, const Mat& Z) const
+	{
+		return (X * Z.transpose()).array() + c;
+	}
+
+	double c;
 };
 
 
@@ -20,36 +33,25 @@ struct RBFKernel
 
 	double operator () (const Vec& x, const Vec& y) const
 	{
-		return exp(-(x - y).squaredNorm() * gamma);
+		return exp(-gamma * (x - y).squaredNorm());
 	}
 
 	Vec operator () (const Mat& X, const Vec& y) const
 	{
-		return exp(-((X.rowwise() - y.transpose()).rowwise().squaredNorm() * gamma).array());
+		return exp(-(gamma * (X.rowwise() - y.transpose()).rowwise().squaredNorm()).array());
 	}
 
 
-	Mat operator () (const Mat& X) const
+	Mat operator () (const Mat& X, const Mat& Z) const
 	{
-		Mat res(X.rows(), X.rows());
+		Mat res(X.rows(), Z.rows());
 
 		for(int i = 0; i < X.rows(); ++i)
-			for(int j = 0; j < X.rows(); ++j)
-				res(i, j) = this->operator()(Vec(X.row(i)), Vec(X.row(j)));
+			for(int j = 0; j < Z.rows(); ++j)
+				res(i, j) = this->operator()(Vec(X.row(i)), Vec(Z.row(j)));
 
 		return res;
 	}
-
-
-	// Mat operator () (const Mat& X, const Mat& Y) const
-	// {
-	// 	Mat res(X.rows(), Y.cols());
-
-	// 	for(int i = 0; i < X.rows(); ++i)
-	// 		res.col(i) = this->operator()(X, Vec(Y.row(i)));
-
-	// 	return res;
-	// }
 
 
 	double gamma;

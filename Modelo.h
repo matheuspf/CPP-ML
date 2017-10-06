@@ -277,6 +277,7 @@ auto index (const VecX<T>& x, const vector<int>& ids)
 }
 
 
+
 Mat inverseMat (const Mat& X)
 {
 	Eigen::LLT<Mat> llt(X);
