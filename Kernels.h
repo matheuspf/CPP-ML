@@ -38,7 +38,7 @@ struct RBFKernel
 
 	Vec operator () (const Mat& X, const Vec& y) const
 	{
-		return exp(-(gamma * (X.rowwise() - y.transpose()).rowwise().squaredNorm()).array());
+		return exp(-gamma *((X.rowwise() - y.transpose()).rowwise().squaredNorm()).array());
 	}
 
 
