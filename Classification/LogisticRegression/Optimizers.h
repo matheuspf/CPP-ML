@@ -1,0 +1,13 @@
+#ifndef CPP_ML_LOGISTIC_REGRESSION_OPTIMIZER
+#define CPP_ML_LOGISTIC_REGRESSION_OPTIMIZER
+
+#include "../../Modelo.h"
+
+
+
+struct 
+
+
+
+
+#endif // CPP_ML_LOGISTIC_REGRESSION_OPTIMIZER

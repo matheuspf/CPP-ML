@@ -6,6 +6,8 @@
 #include <Eigen/Dense>
 
 #include "Benchmark.h"
+#include "Range.h"
+#include "ZipIter/ZipIter.h"
 
 #define FORR(i, I, F) for(auto i = (I); i < (F); ++i)
 #define RFORR(i, I, F) for(int i = (I); i >= (F); --i)

@@ -45,7 +45,18 @@ struct Multinomial
 
 
 
-	//template <class V, enable_if_t<is_same_v<decay_t<V>, Vec>, int> = 0>
+	
+	void params (const std::vector<int>& v)
+	{
+		Vec mu_(v.size());
+
+		for(int i = 0; i < v.size(); ++i)
+			mu_(i) = v[i];
+
+		params(mu_);
+	}
+
+	
 	void params (Vec mu_)
 	{
 		mu = mu_;
