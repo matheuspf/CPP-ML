@@ -39,8 +39,8 @@ Mat readMat (const string& fName, char delimiter = ' ')
 
 
 
-template <class Mat, class Vec>
-auto trainTestSplit (const Mat& X, const Vec& y, double split = 0.3, int rng = 0)
+template <class MatType, class VecType>
+auto trainTestSplit (const MatType& X, const VecType& y, double split = 0.3, int rng = 0)
 {
 	assert(X.rows() == y.rows() && split > 0 && split < 1.0);
 
@@ -57,8 +57,8 @@ auto trainTestSplit (const Mat& X, const Vec& y, double split = 0.3, int rng = 0
 	int trainM = round((1.0 - split) * M);
 	int testM = M - trainM;
 
-	Mat Xtrain(trainM, N), Xtest(testM, N);
-	Vec ytrain(trainM), ytest(testM);
+	MatType Xtrain(trainM, N), Xtest(testM, N);
+	VecType ytrain(trainM), ytest(testM);
 
 
 	for(int i = 0; i < trainM; ++i)

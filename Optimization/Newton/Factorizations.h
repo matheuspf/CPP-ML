@@ -4,12 +4,14 @@
 #include "../../Modelo.h"
 
 
-
+template <template <class> class Decomposition = Eigen::ColPivHouseholderQR>
 struct SimplyInvert
 {
 	Vec operator () (const Vec& grad, const Mat& hess)
 	{
-		return -hess.colPivHouseholderQr().solve(grad);
+		Decomposition<Mat> decomp(hess);
+
+		return -decomp.solve(grad);
 	}
 };
 

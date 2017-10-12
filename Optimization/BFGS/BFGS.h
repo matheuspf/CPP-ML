@@ -59,7 +59,7 @@ struct BFGS
             // if(s.dot(y) <= 0.0 || g1.norm() < gTol)
             //    break;
 
-            if(g1.norm() < gTol)
+            if(g1.norm() < gTol || dir.norm() < EPS)
                 break;
 
 

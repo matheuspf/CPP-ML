@@ -219,16 +219,28 @@ void applyTuple (Apply apply, std::tuple<Args...>& tup, FuncArgs&&... funcArgs)
 
 namespace std
 {
-	template <class V, enable_if_t<is_same_v<decay_t<V>, Vec>, int> = 0>
-	auto begin (V&& v)
+	template <typename T>
+	auto begin (VecX<T>& v)
 	{
-		return forward<V>(v).data();
+		return v.data();
 	}
 
-	template <class V, enable_if_t<is_same_v<decay_t<V>, Vec>, int> = 0>
-	auto end (V&& v)
+	template <typename T>
+	auto end (VecX<T>& v)
 	{
-		return forward<V>(v).data() + forward<V>(v).rows();
+		return v.data() + v.rows();
+	}
+
+	template <typename T>
+	auto cbegin (const VecX<T>& v)
+	{
+		return v.data();
+	}
+
+	template <typename T>
+	auto cend (const VecX<T>& v)
+	{
+		return v.data() + v.rows();
 	}
 }
 
