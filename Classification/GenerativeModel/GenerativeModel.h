@@ -44,16 +44,20 @@ struct GenerativeModel
         int label = 0;
         double bestPosterior = std::numeric_limits<double>::min();
 
+        //cout << x.transpose() << "        ";
+
         for(int k = 0; k < numClasses; ++k)
         {
             double posterior = classPrior(k) * classConditionals[k](x);
+
+            //cout << classPrior(k) << "   " << classConditionals[k](x) << "              ";
 
             if(posterior > bestPosterior)
             {
                 bestPosterior = posterior;
                 label = k;
             }
-        }
+        }//db("\n");
 
         return classReverseMap[label];
     }

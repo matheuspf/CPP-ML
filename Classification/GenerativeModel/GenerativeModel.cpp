@@ -1,6 +1,7 @@
 #include "GenerativeModel.h"
 #include <gnuplot-iostream.h>
 
+#include "../../Distributions/Student/Student.h"
 
 
 struct Plotting
@@ -47,8 +48,10 @@ void test1 ()
     Mat X(M, N);
     Veci y(M);
 
-    Gaussian g1(Vec::Constant(N, 1.5), 0.5);
-    Gaussian g2(Vec::Constant(N, -1.5), 2.0);
+    // Gaussian g1(Vec::Constant(N, 1.5), 0.5);
+    // Gaussian g2(Vec::Constant(N, -1.5), 2.0);
+    Student g1(Vec::Constant(N, 1.5), 1.0, 2.0);
+    Student g2(Vec::Constant(N, -1.5), 0.5, 2.0);
 
 
     FOR(i, M)
@@ -64,10 +67,10 @@ void test1 ()
     }
 
 
-    //plotSurface([&](const Vec& x){ return g1(x) + g2(x); }, Plotting::surface, -5.0, 5.0, 200); exit(0);
+    //plotSurface([&](const Vec& x){ return g1(x) + g2(x); }, Plotting::surface, -5.0, 5.0, 500); exit(0);
 
 
-    GenerativeModel<Gaussian> genModel;
+    GenerativeModel<Student> genModel;
 
     genModel.fit(X, y);
 

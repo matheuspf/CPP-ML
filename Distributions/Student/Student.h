@@ -29,6 +29,11 @@ struct Student : public Gaussian
 		params(v_);
 	}
 
+	Student (const Vec& mu_, double sigma_, double v_) : Gaussian(mu_, sigma_)
+	{
+		params(v_);
+	}
+
 
 
 
