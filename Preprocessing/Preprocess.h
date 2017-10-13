@@ -243,6 +243,66 @@ Mat polyExpansion (const Mat& X, int degree = 2)
 }
 
 
+template <class T = int>
+struct LabelEncoder
+{
+	LabelEncoder& fit (const VecX<T>& x)
+	{
+		K = 0;
+		labelSet.clear();
+		reverseMap.clear();
+
+		std::for_each(std::begin(x), std::end(x), [&](const T& t)
+		{
+			if(labelSet.find(t) == labelSet.end())
+				labelSet[t] = K++;
+			
+			reverseMap[labelSet[t]] = t;
+		});
+
+		return *this;
+	}
+
+
+	VecX<T> transform (const VecX<T>& x, std::vector<int> labels = std::vector<int>())
+	{
+		if(labels.empty())
+		{
+			labels.resize(K);
+			std::iota(labels.begin(), labels.end(), 0);
+		}
+
+		assert(K == labels.size() && "Number of labels given does not match the number of labels in the data.");
+
+
+		Veci y(x.rows());
+
+		for(int i = 0; i < x.rows(); ++i)
+		{
+			auto it = labelSet.find(x(i));
+
+			assert(it != labelSet.end() && "Invalid label found in the data.");
+
+			y(i) = labels[it->second];
+		}
+
+		return y;
+	}
+
+
+	VecX<T> fitTransform (const VecX<T>& x, const std::vector<int>& labels = std::vector<int>())
+	{
+		return fit(x).transform(x, labels);
+	}
+
+
+	int K;
+
+	std::unordered_map<T, int> labelSet;
+	std::unordered_map<int, T> reverseMap;
+};
+
+
 
 
 

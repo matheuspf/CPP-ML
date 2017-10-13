@@ -18,6 +18,16 @@ struct SquaredError
     }
 };
 
+struct Accuracy
+{
+    //template <class T>
+    inline double operator () (const Veci& x, const Veci& y) const
+    {
+        return 1.0 - ((x.array() == y.array()).cast<double>().sum() / (x.rows() * x.cols()));
+    }
+};
+
+
 
 
 struct KFold

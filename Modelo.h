@@ -232,13 +232,13 @@ namespace std
 	}
 
 	template <typename T>
-	auto cbegin (const VecX<T>& v)
+	auto begin (const VecX<T>& v)
 	{
 		return v.data();
 	}
 
 	template <typename T>
-	auto cend (const VecX<T>& v)
+	auto end (const VecX<T>& v)
 	{
 		return v.data() + v.rows();
 	}
