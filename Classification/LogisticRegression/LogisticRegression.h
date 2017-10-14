@@ -7,8 +7,10 @@
 
 #include "../../Optimization/Newton/Newton.h"
 
+#include "../../Regularizers.h"
 
-template <class Optimizer = Newton<Goldstein, CholeskyIdentity>>
+
+template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
 struct LogisticRegression
 {
     LogisticRegression (double alpha = 1e-8, const Optimizer& optimizer = Optimizer()) :
@@ -41,14 +43,14 @@ struct LogisticRegression
             ArrayXd sig = sigmoid((X * w).array());
 
             return -(y.array().cast<double>() * log(sig) + (1.0 - y.array().cast<double>()) * log(1.0 - sig)).sum()
-                   //+ 0.5 * alpha * (w.array().abs().sum() - abs(w(N-1)));
-                   //+ 0.5 * alpha * (w.squaredNorm() - pow(w(N-1), 2));
-                   + 0.5 * alpha * w.squaredNorm();
+                    + 0.5 * alpha * regularizer(w);
+                   //+ 0.5 * alpha * regularizer(Vec(w.head(N-1)));
         };
 
         auto grad = [&](const Vec& w) -> Vec
         {
-            return X.transpose() * (sigmoid((X * w).array()).matrix() - y.cast<double>()) + alpha * w;
+            return X.transpose() * (sigmoid((X * w).array()).matrix() - y.cast<double>()) +
+                   0.5 * alpha * regularizer.gradient(w);
         };
 
         auto hess = [&](Vec w) -> Mat
@@ -140,6 +142,8 @@ struct LogisticRegression
 
 
     double alpha;
+
+    Regularizer regularizer;
 
     Optimizer optimizer;
 

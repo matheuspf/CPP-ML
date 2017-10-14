@@ -292,6 +292,33 @@ auto index (const VecX<T>& x, const vector<int>& ids)
 
 
 
+template <class T, class F>
+auto select (const MatX<T>& X, F f)
+{
+	MatX<decay_t<decltype(f(T()))>> Z(X.rows(), X.cols());
+
+	for(int i = 0; i < X.rows(); ++i)
+		for(int j = 0; j < X.cols(); ++j)
+			Z(i, j) = f(X(i, j));
+
+	return Z;
+}
+
+template <class T, class F>
+auto select (const VecX<T>& x, F f)
+{
+	VecX<decay_t<decltype(f(T()))>> z(x.rows());
+
+	std::transform(std::begin(x), std::end(x), std::begin(z), [&](const auto& w){ return f(w); });
+
+	return z;
+}
+
+
+
+
+
+
 Mat inverseMat (const Mat& X)
 {
 	Eigen::LLT<Mat> llt(X);

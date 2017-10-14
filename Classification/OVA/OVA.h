@@ -38,6 +38,8 @@ public:
 
             classifiers[k].fit(X, yk, std::forward<Args>(args)...);
         }
+
+        return *this;
     }
 
 
