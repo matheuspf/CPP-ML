@@ -250,15 +250,19 @@ struct LabelEncoder
 	{
 		K = 0;
 		labelSet.clear();
-		reverseMap.clear();
+		labelMap.clear();
+		labelOrder.clear();
 
 		std::for_each(std::begin(x), std::end(x), [&](const T& t)
 		{
-			if(labelSet.find(t) == labelSet.end())
-				labelSet[t] = K++;
-			
-			reverseMap[labelSet[t]] = t;
+			labelSet.insert(t);
 		});
+
+		
+		for(const auto& t : labelSet)
+			labelMap[t] = K++;
+
+
 
 		return *this;
 	}
@@ -275,13 +279,19 @@ struct LabelEncoder
 		assert(K == labels.size() && "Number of labels given does not match the number of labels in the data.");
 
 
+		reverseMap.clear();
+
+		for(auto it = labelSet.begin(), k = 0; k < K; ++it, ++k)
+			reverseMap.emplace(labels[k], *it);
+
+
 		Veci y(x.rows());
 
 		for(int i = 0; i < x.rows(); ++i)
 		{
-			auto it = labelSet.find(x(i));
+			auto it = labelMap.find(x(i));
 
-			assert(it != labelSet.end() && "Invalid label found in the data.");
+			assert(it != labelMap.end() && "Invalid label found in the data.");
 
 			y(i) = labels[it->second];
 		}
@@ -298,7 +308,12 @@ struct LabelEncoder
 
 	int K;
 
-	std::unordered_map<T, int> labelSet;
+	std::set<T> labelSet;
+
+	std::unordered_map<T, int> labelMap;
+
+	std::vector<T> labelOrder;
+
 	std::unordered_map<int, T> reverseMap;
 };
 

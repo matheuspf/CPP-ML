@@ -3,6 +3,8 @@
 
 #include "../../Modelo.h"
 
+#include "../../Preprocessing/Preprocess.h"
+
 #include "../../Optimization/Newton/Newton.h"
 
 
@@ -16,7 +18,7 @@ struct LogisticRegression
                         alpha(alpha), optimizer(optimizer) {}
 
 
-    LogisticRegression& fit (Mat X, Veci y)
+    LogisticRegression& fit (Mat X, Veci y, bool preProcessLabels_ = false)
     {
         assert(X.rows() == y.rows() && "Observation matrix and labels differ in number of samples.");
 
@@ -24,15 +26,19 @@ struct LogisticRegression
         X.col(X.cols()-1).array() = 1.0;
         
         M = X.rows(), N = X.cols();
+        preProcessLabels = preProcessLabels_;
 
+        if(preProcessLabels)
+        {
+            lenc = LabelEncoder<int>();
+            y = lenc.fitTransform(y, {0, 1});
+        }
 
-
-        ArrayXd sig;
 
 
         auto func = [&](const Vec& w) -> double
         {
-            sig = sigmoid((X * w).array());
+            ArrayXd sig = sigmoid((X * w).array());
 
             return -(y.array().cast<double>() * log(sig) + (1.0 - y.array().cast<double>()) * log(1.0 - sig)).sum()
                    //+ 0.5 * alpha * (w.array().abs().sum() - abs(w(N-1)));
@@ -42,8 +48,7 @@ struct LogisticRegression
 
         auto grad = [&](const Vec& w) -> Vec
         {
-            return X.transpose() * (sig.matrix() - y.cast<double>()) + alpha * w;
-            //return X.transpose() * (sigmoid((X * w).array()).matrix() - y.cast<double>()) + alpha * w;
+            return X.transpose() * (sigmoid((X * w).array()).matrix() - y.cast<double>()) + alpha * w;
         };
 
         auto hess = [&](Vec w) -> Mat
@@ -55,13 +60,10 @@ struct LogisticRegression
 
 
         w = Vec::Constant(N, 0.0);
-
-        //generate(w.data(), w.data() + N, [&]{ return randDouble(-1.0/sqrt(N), 1.0/sqrt(N)); });
-
         
         w = optimizer(func, grad, w);
 
-        transform(begin(w), end(w), begin(w), [](double x){ return abs(x) < 1e-7 ? 0.0 : x; });
+        //transform(begin(w), end(w), begin(w), [](double x){ return abs(x) < 1e-7 ? 0.0 : x; });
 
 
         intercept = w(N-1);
@@ -73,13 +75,52 @@ struct LogisticRegression
 
     int predict (const Vec& x)
     {
-        return w.dot(x) + intercept > 0.0;
+        int label = predictMargin(x) > 0.0;
+
+        if(preProcessLabels)
+            label = lenc.reverseMap[label];
+
+        return label;
     }
 
     auto predict (const Mat& X)
     {
-        return ((X * w).array() + intercept > 0.0).cast<int>();
+        Veci labels = (ArrayXd(predictMargin(X)) > 0.0).cast<int>();
+
+        if(preProcessLabels)
+        {
+            std::transform(std::begin(labels), std::end(labels), std::begin(labels), [&](int label)
+            {
+                return lenc.reverseMap[label];
+            });
+        }
+
+        return labels;
     }
+
+
+
+    double predictProb (const Vec& x)
+    {
+        return sigmoid(predictMargin(x));
+    }
+
+    Vec predictProb (const Mat& X)
+    {
+        return sigmoid(predictMargin(X));
+    }
+
+
+    double predictMargin (const Vec& x)
+    {
+        return w.dot(x) + intercept;
+    }
+
+    Vec predictMargin (const Mat& X)
+    {
+        return (X * w).array() + intercept;
+    }
+
 
 
 
@@ -109,6 +150,11 @@ struct LogisticRegression
 
     
     int M, N;
+
+
+    bool preProcessLabels;
+
+    LabelEncoder<int> lenc;
 
 
     unordered_map<int, int> classMap;

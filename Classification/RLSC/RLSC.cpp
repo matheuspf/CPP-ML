@@ -10,6 +10,8 @@
 
 #include "../../Optimization/BFGS/BFGS.h"
 
+#include "../OVA/OVA.h"
+
 
 
 int main ()
@@ -22,9 +24,10 @@ int main ()
 
     // X.conservativeResize(Eigen::NoChange, X.cols()-1);
 
+
     Mat X = readMat("../../Data/Wine.txt", ',');
 
-    X = X.block(0, 0, 130, X.cols());
+    //X = X.block(0, 0, 130, X.cols());
 
     Veci y = X.col(0).cast<int>();
 
@@ -32,9 +35,9 @@ int main ()
 
 
 
-    LabelEncoder lenc;
+    // LabelEncoder lenc;
 
-    y = lenc.fitTransform(y, {-1, 1});
+    // y = lenc.fitTransform(y, {-1, 1});
 
 
     auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.5, 1);
@@ -47,35 +50,37 @@ int main ()
 
 
 
-    RLSC<LinearKernel> rlsc;
+    //RLSC<LinearKernel> rlsc(1e-1);
 
-    vector<double> alphas;
+    OVA<RLSC<LinearKernel>> rlsc(1e-1);
 
-    for(double x = -10; x <= 0; x += 0.5)
-        alphas.push_back(pow(10, x));
 
-    auto gs = makeGridsearchCV(rlsc, make_tuple(make_pair([](auto& cls, double a){ cls.alpha = a; }, alphas)),
-                                                //make_pair([](auto& cls, double g){ cls.kernel.gamma = g; }, alphas)),
-                                                3, Accuracy());
+    // vector<double> alphas;
 
-    gs.fit(X_train, y_train);
+    // for(double x = -10; x <= 0; x += 0.5)
+    //     alphas.push_back(pow(10, x));
 
-    rlsc = gs.bestEstimator;
+    // auto gs = makeGridsearchCV(rlsc, make_tuple(make_pair([](auto& cls, double a){ cls.alpha = a; }, alphas)),
+    //                                             //make_pair([](auto& cls, double g){ cls.kernel.gamma = g; }, alphas)),
+    //                                             3, Accuracy());
 
+    // gs.fit(X_train, y_train);
+
+    // rlsc = gs.bestEstimator;
 
 
     Veci y_pred;
 
     double runTime = benchmark([&]
     {
-        rlsc.fit(X_train, y_train);
+        rlsc.fit(X_train, y_train, false);
     });
 
     y_pred = rlsc.predict(X_test);
     
 
 
-    db(rlsc.w.transpose(), "         ", rlsc.alpha, "\n");
+    //db(rlsc.w.transpose(), "         ", rlsc.alpha, "\n");
 
     db(y_test.transpose(), "\n", y_pred.transpose(), "\n");
 
