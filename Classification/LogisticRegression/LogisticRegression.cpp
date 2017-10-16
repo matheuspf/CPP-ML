@@ -49,8 +49,10 @@ int main ()
     opt.maxIter = 10;
     opt.gTol = 1e-3;
 
-    OVA<LogisticRegression<L1, Optimizer>> lr(1e-1, opt);
+    LogisticRegression<L1, Optimizer> lr(1e-1, opt);
 
+    //OVA<LogisticRegression<L1, Optimizer>> lr(1e-1, opt);
+    //0.966292   0.00602004
 
 
 
