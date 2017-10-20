@@ -8,8 +8,6 @@
 
 #include "../../Optimization/BFGS/BFGS.h"
 
-#include "../OVA/OVA.h"
-
 
 
 int main ()
@@ -41,15 +39,21 @@ int main ()
 
 
     //using Optimizer = Newton<StrongWolfe, SimplyInvert<Eigen::LLT>>;
-    //using Optimizer = CG<HS, Backtracking>;
-    using Optimizer = BFGS<StrongWolfe, BFGS_Diagonal>;
+    using Optimizer = CG<HS, Backtracking>;
+    //using Optimizer = BFGS<StrongWolfe, BFGS_Diagonal>;
 
     Optimizer opt(StrongWolfe(1.0, 1e-2));
 
     opt.maxIter = 10;
     opt.gTol = 1e-3;
 
-    LogisticRegression<L1, Optimizer> lr(1e-1, opt);
+    // Optimizer opt;
+
+    // opt.maxIterations = 10;
+    // opt.gTol = 1e-3;
+
+
+    LogisticRegression<L2, Optimizer> lr(1e-1, opt, "OVA");
 
     //OVA<LogisticRegression<L1, Optimizer>> lr(1e-1, opt);
     //0.966292   0.00602004

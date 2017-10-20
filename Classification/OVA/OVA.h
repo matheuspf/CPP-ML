@@ -12,7 +12,7 @@ struct OVA
 public:
 
     template <typename... Args>
-    OVA (Args&&... args) : classifiers(1, Classifier(std::forward<Args>(args)...)) {}
+    OVA (Args&&... args) : classifierBase(std::forward<Args>(args)...) {}
 
 
     template <typename... Args>
@@ -29,7 +29,7 @@ public:
             K = lenc.K;
         }
 
-        classifiers.resize(K, classifiers[0]);
+        classifiers.resize(K, classifierBase);
 
         Veci yk(M);
 
@@ -99,13 +99,18 @@ public:
     }
 
 
+    Vec predictMargin (const Mat&) { return Vec(); }
+    Vec predictProb (const Mat&) { return Vec(); }
 
+    
 
     int M, N, K;
 
     LabelEncoder<int> lenc;
 
     std::vector<Classifier> classifiers;
+
+    Classifier classifierBase;
 
     bool preProcessLabels;
 };

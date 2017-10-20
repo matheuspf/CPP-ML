@@ -11,6 +11,8 @@
 
 #include "../OVA/OVA.h"
 
+//#include "../OVO/OVO.h"
+
 
 
 template <class, class>
@@ -61,6 +63,9 @@ struct LogisticRegression
         {
             if(multiClassType == "OVA")
                 impl = new LogisticRegressionHandler<OVA, LogisticRegressionTwoClass<Regularizer, Optimizer>>(alpha, optimizer);
+
+            // else if(multiClassType == "OVO")
+            //     impl = new LogisticRegressionHandler<OVO, LogisticRegressionTwoClass<Regularizer, Optimizer>>(alpha, optimizer);
         }
         
 
@@ -101,10 +106,10 @@ struct LogisticRegression
     //     return impl->predictProb(x);
     // }
 
-    // Vec predictProb (const Mat& X)
-    // {
-    //     return impl->predictProb(X);
-    // }
+    Vec predictProb (const Mat& X)
+    {
+        return impl->predictProb(X);
+    }
 
 
     // double predictMargin (const Vec& x)
@@ -112,10 +117,10 @@ struct LogisticRegression
     //     return return impl->predictMargin(x);
     // }
 
-    // Vec predictMargin (const Mat& X)
-    // {
-    //     return impl->predictMargin(X);
-    // }
+    Vec predictMargin (const Mat& X)
+    {
+        return impl->predictMargin(X);
+    }
     
 
     
@@ -164,11 +169,11 @@ struct LogisticRegressionBase
     virtual int predict (const Vec&)  = 0;
     virtual Veci predict (const Mat&) = 0;
 
-    // virtual double predictProb (const Vec&) = 0;
-    // virtual Vec predictProb (const Mat&)    = 0;
+    //virtual double predictProb (const Vec&) = 0;
+    virtual Vec predictProb (const Mat&)    = 0;
     
-    // virtual double predictMargin (const Vec&) = 0;    
-    // virtual Vec predictMargin (const Vec&)    = 0; 
+    //virtual double predictMargin (const Vec&) = 0;    
+    virtual Vec predictMargin (const Mat&)    = 0; 
 
 
     template <class T>
@@ -254,7 +259,7 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
 
     Vec predictProb (const Mat& X)
     {
-        return sigmoid(predictMargin(X));
+        return sigmoid(predictMargin(X).array());
     }
 
 
@@ -299,6 +304,18 @@ struct LogisticRegressionHandler : public Handler<LogReg>, LogReg
     {
         return Handler<LogReg>::predict(X);
     }
+
+
+    Vec predictMargin (const Mat& X)
+    {
+        return Handler<LogReg>::predictMargin(X);
+    }
+
+    Vec predictProb (const Mat& X)
+    {
+        return Handler<LogReg>::predictProb(X);
+    }
+
 };
 
 
