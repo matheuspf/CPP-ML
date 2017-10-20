@@ -39,8 +39,8 @@ int main ()
 
 
     //using Optimizer = Newton<StrongWolfe, SimplyInvert<Eigen::LLT>>;
-    using Optimizer = CG<HS, Backtracking>;
-    //using Optimizer = BFGS<StrongWolfe, BFGS_Diagonal>;
+    //using Optimizer = CG<HS, Backtracking>;
+    using Optimizer = BFGS<StrongWolfe, BFGS_Diagonal>;
 
     Optimizer opt(StrongWolfe(1.0, 1e-2));
 

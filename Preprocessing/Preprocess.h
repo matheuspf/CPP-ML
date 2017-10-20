@@ -248,7 +248,7 @@ struct LabelEncoder
 {
 	LabelEncoder& fit (const VecX<T>& x)
 	{
-		K = 0;
+		numClasses = 0;
 		labelSet.clear();
 		labelMap.clear();
 		labelOrder.clear();
@@ -260,7 +260,7 @@ struct LabelEncoder
 
 		
 		for(const auto& t : labelSet)
-			labelMap[t] = K++;
+			labelMap[t] = numClasses++;
 
 
 
@@ -272,16 +272,16 @@ struct LabelEncoder
 	{
 		if(labels.empty())
 		{
-			labels.resize(K);
+			labels.resize(numClasses);
 			std::iota(labels.begin(), labels.end(), 0);
 		}
 
-		assert(K == labels.size() && "Number of labels given does not match the number of labels in the data.");
+		assert(numClasses == labels.size() && "Number of labels given does not match the number of labels in the data.");
 
 
 		reverseMap.clear();
 
-		for(auto it = labelSet.begin(), k = 0; k < K; ++it, ++k)
+		for(auto it = labelSet.begin(), k = 0; k < numClasses; ++it, ++k)
 			reverseMap.emplace(labels[k], *it);
 
 
@@ -306,7 +306,7 @@ struct LabelEncoder
 	}
 
 
-	int K;
+	int numClasses;
 
 	std::set<T> labelSet;
 

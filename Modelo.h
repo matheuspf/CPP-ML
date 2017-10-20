@@ -175,6 +175,9 @@ inline auto bound (const T& x, const T& l, const T& u)
 
 
 
+struct EmptyBase {};
+
+
 template <bool...>
 struct And;
 
