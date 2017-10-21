@@ -5,24 +5,21 @@
 
 #include "../ClassEncoder.h"
 
-#include "LogisticRegressionTwoClass.h"
+#include "LogisticRegressionBase.h"
 
 
 /// To make class a base of LogisticRegressionBaseVirtual
-template <class Regularizer, class Optimizer, template <class> class OV>
-struct LogisticRegressionOV : public OV<LogisticRegressionTwoClass<class Regularizer, class Optimizer>>,
-                                        LogisticRegressionTwoClass<class Regularizer, class Optimizer>
+template <class Regularizer, class Optimizer, template <class, bool> class OV, bool Encode = true>
+struct LogisticRegressionOV : public OV<LogisticRegressionTwoClass<Regularizer, Optimizer, false>, Encode>,
+                                        LogisticRegressionBase<Regularizer, Optimizer>
 {
-    using Base = OV<LogisticRegressionTwoClass<class Regularizer, class Optimizer>>;
+    using Base = OV<LogisticRegressionTwoClass<Regularizer, Optimizer, false>, Encode>;
+    using Base::Base;
 
 
-    template <typename... Args>
-    LogisticRegressionOV (Args&&... args) : Base(std::forward<Args>(args)...) {}
-
-
-    void fit (const Mat& X, const Veci& y, int K)
+    void fit (const Mat& X, const Veci& y, int numClasses_ = 0)
     {
-        Base::fit(X, y, K);
+        Base::fit(X, y, numClasses_);
     }
 
 

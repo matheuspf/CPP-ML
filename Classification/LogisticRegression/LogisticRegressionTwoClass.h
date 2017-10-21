@@ -9,19 +9,22 @@
 
 
 
-template <class Regularizer, class Optimizer>
+template <class Regularizer, class Optimizer, bool Encode = true>
 struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, Optimizer>,
-                                           ClassEncoder<LogisticRegressionTwoClass<Regularizer, Optimizer>>
+                                           ClassEncoder<LogisticRegressionTwoClass<Regularizer, Optimizer, Encode>, Encode>
 {
     using Base = LogisticRegressionBase<Regularizer, Optimizer>;
     using Base::Base, Base::M, Base::N, Base::alpha, Base::regularizer, Base::optimizer, Base::sigmoid;
 
-    using BaseEncoder = ClassEncoder<LogisticRegressionTwoClass<Regularizer, Optimizer>>;
+    using BaseEncoder = ClassEncoder<LogisticRegressionTwoClass<Regularizer, Optimizer, Encode>, Encode>;
     using BaseEncoder::fit, BaseEncoder::predict;
     
 
-    void fit_ (const Mat& X, const Veci& y)
+    void fit_ (Mat X, const Veci& y)
     {
+        X.conservativeResize(Eigen::NoChange, X.cols()+1);
+        X.col(X.cols()-1).array() = 1.0;
+
         M = X.rows(), N = X.cols();
 
 

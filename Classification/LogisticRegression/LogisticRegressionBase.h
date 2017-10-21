@@ -22,11 +22,11 @@ struct LogisticRegressionBase
     LogisticRegressionBase& operator= (LogisticRegressionBase&&)      = default;
 
 
-    virtual void fit_ (const Mat&, const Veci&) = 0;
+    virtual void fit_ (Mat, const Veci&) = 0;
 
-    virtual int  predict (const Vec&) = 0;
+    virtual int  predict_ (const Vec&) = 0;
 
-    virtual Veci predict (const Mat&) = 0;
+    virtual Veci predict_ (const Mat&) = 0;
 
 
 

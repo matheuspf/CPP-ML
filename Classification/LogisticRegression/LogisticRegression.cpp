@@ -56,7 +56,7 @@ int main ()
     LogisticRegression<L2, Optimizer> lr(1e-1, opt, "OVA");
 
     //OVA<LogisticRegression<L1, Optimizer>> lr(1e-1, opt);
-    //0.966292   0.00602004
+    //0.977528   0.018
 
 
 

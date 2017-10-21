@@ -3,45 +3,39 @@
 
 #include "../../Modelo.h"
 
-#include "../../Preprocessing/Preprocess.h"
+#include "../ClassEncoder.h"
 
 
-template <class Classifier>
-struct OVA
+template <class Classifier, bool Encode = true>
+struct OVA : public ClassEncoder<OVA<Classifier, Encode>, Encode>
 {
 public:
+
+    using Base = ClassEncoder<OVA<Classifier, Encode>, Encode>;
+    using Base::fit, Base::predict, Base::numClasses;
+
 
     template <typename... Args>
     OVA (Args&&... args) : classifierBase(std::forward<Args>(args)...) {}
 
 
-    template <typename... Args>
-    OVA& fit (const Mat& X, Veci y, int K_ = 0, Args&&... args)
+    OVA& fit_ (const Mat& X, const Veci& y)
     {
         M = X.rows(), N = X.cols();
 
-        K = K_;
-        preProcessLabels = K <= 0;
-
-        if(K <= 0)
-        {
-            y = lenc.fitTransform(y);
-            K = lenc.K;
-        }
-
-        classifiers.resize(K, classifierBase);
+        classifiers.resize(numClasses, classifierBase);
 
         Veci yk(M);
 
 
-        for(int k = 0; k < K; ++k)
+        for(int k = 0; k < numClasses; ++k)
         {
             std::transform(std::begin(y), std::end(y), std::begin(yk), [&](int x)
             {
                 return x == k ? 1 : 0;
             });
 
-            classifiers[k].fit(X, yk, std::forward<Args>(args)...);
+            classifiers[k].fit(X, yk);
         }
 
         return *this;
@@ -49,32 +43,25 @@ public:
 
 
 
-    template <typename... Args>
-    int predict (const Vec& x, Args&&... args)
+    int predict_ (const Vec& x)
     {
-        Vec classMargin(K);
+        Vec classMargin(numClasses);
 
         std::transform(std::begin(classifiers), std::end(classifiers), std::begin(classMargin), [&](auto& cls)
         {
-            return cls.predictMargin(x, std::forward<Args>(args)...);
+            return cls.predictMargin(x);
         });
 
-        int label = std::max_element(std::begin(classMargin), std::end(classMargin)) - std::begin(classMargin);
-
-        if(preProcessLabels)
-            label = lenc.reverseMap[label];
-        
-        return label;
+        return std::max_element(std::begin(classMargin), std::end(classMargin)) - std::begin(classMargin);
     }
 
 
-    template <typename... Args>
-    Veci predict (const Mat& X, Args&&... args)
+    Veci predict_ (const Mat& X)
     {
-        Mat classProb(X.rows(), K);
+        Mat classProb(X.rows(), numClasses);
 
-        for(int k = 0; k < K; ++k)
-            classProb.col(k) = classifiers[k].predictMargin(X, std::forward<Args>(args)...);
+        for(int k = 0; k < numClasses; ++k)
+            classProb.col(k) = classifiers[k].predictMargin(X);
 
         Veci labels(X.rows());
 
@@ -82,7 +69,7 @@ public:
         {
             double val = -1e20;
             
-            for(int k = 0; k < K; ++k)
+            for(int k = 0; k < numClasses; ++k)
             {
                 if(classProb(i, k) > val)
                 {
@@ -90,9 +77,6 @@ public:
                     labels(i) = k;
                 }
             }
-
-            if(preProcessLabels)
-                labels(i) = lenc.reverseMap[labels(i)];
         }
 
         return labels;
@@ -104,15 +88,11 @@ public:
 
     
 
-    int M, N, K;
-
-    LabelEncoder<int> lenc;
-
+    int M, N;
+    
     std::vector<Classifier> classifiers;
 
     Classifier classifierBase;
-
-    bool preProcessLabels;
 };
 
 

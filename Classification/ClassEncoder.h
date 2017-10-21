@@ -17,20 +17,19 @@ struct ClassEncoder
 
         if(encodeLabels)
         {
-            const_cast<Veci&>(y) = lenc.fitTransform(y);
+            Veci y_enc = lenc.fitTransform(y);
             numClasses = lenc.numClasses;
+
+            return static_cast<Impl&>(*this).fit_(X, y_enc);
         }
-
-        if(encode)
             
-
-        return static_cast<Impl&>(*this).fit(X, y);
+        return static_cast<Impl&>(*this).fit_(X, y);
     }
 
 
     auto predict (const Vec& x)
     {
-        auto label = static_cast<Impl&>(*this).predict(x);
+        auto label = static_cast<Impl&>(*this).predict_(x);
 
         if(encodeLabels)
             label = lenc.reverseMap[label];
@@ -40,7 +39,7 @@ struct ClassEncoder
 
     auto predict (const Mat& X)
     {
-        auto labels = static_cast<Impl&>(*this).predict(X);
+        auto labels = static_cast<Impl&>(*this).predict_(X);
 
         if(encodeLabels)
         {
@@ -54,7 +53,7 @@ struct ClassEncoder
     }
 
 
-    LabelEncoder lenc;
+    LabelEncoder<int> lenc;
 
     int numClasses;
 
@@ -74,20 +73,20 @@ private:
 template <class Impl>
 struct ClassEncoder<Impl, false>
 {
-    decltype(auto) fit (const Mat& X, const Veci& y, int)
+    decltype(auto) fit (const Mat& X, const Veci& y)
     {
-        return static_cast<Impl&>(*this).fit(X, y);
+        return static_cast<Impl&>(*this).fit_(X, y);
     }
 
 
     auto predict (const Vec& x)
     {
-        return static_cast<Impl&>(*this).predict(x);
+        return static_cast<Impl&>(*this).predict_(x);
     }
 
     auto predict (const Mat& X)
     {
-        return static_cast<Impl&>(*this).predict(X);
+        return static_cast<Impl&>(*this).predict_(X);
     }
 
 
