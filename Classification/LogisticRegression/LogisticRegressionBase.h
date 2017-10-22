@@ -3,9 +3,11 @@
 
 #include "../../Modelo.h"
 
+#include "../ClassEncoder.h"
+
 
 template <class Regularizer, class Optimizer>
-struct LogisticRegressionBase
+struct LogisticRegressionBase : public ClassEncoder<LogisticRegressionBase<Regularizer, Optimizer>>
 {
     LogisticRegressionBase (double alpha = 1e-8, const Optimizer& optimizer = Optimizer()) :
                                 alpha(alpha), optimizer(optimizer) {}
@@ -22,7 +24,7 @@ struct LogisticRegressionBase
     LogisticRegressionBase& operator= (LogisticRegressionBase&&)      = default;
 
 
-    virtual void fit_ (Mat, const Veci&) = 0;
+    virtual void fit_ (const Mat&, const Veci&) = 0;
 
     virtual int  predict_ (const Vec&) = 0;
 
@@ -47,9 +49,13 @@ struct LogisticRegressionBase
     Regularizer regularizer;
 
     Optimizer optimizer;
+
+    static std::vector<int> classLabels;
 };
 
 
+template <class Regularizer, class Optimizer>
+std::vector<int> LogisticRegressionBase<Regularizer, Optimizer>::classLabels = {1, 0};
 
 
 

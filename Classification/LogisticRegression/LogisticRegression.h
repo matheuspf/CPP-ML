@@ -21,10 +21,10 @@
 
 
 
-template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool Encode = true>
-struct LogisticRegression : public ClassEncoder<LogisticRegression<Regularizer, Optimizer, Encode>, Encode>
+template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
+struct LogisticRegression : public ClassEncoder<LogisticRegression<Regularizer, Optimizer>>
 {
-    using Base = ClassEncoder<LogisticRegression<Regularizer, Optimizer, Encode>, Encode>;
+    using Base = ClassEncoder<LogisticRegression<Regularizer, Optimizer>>;
     using Base::fit, Base::predict, Base::numClasses;
 
 
@@ -41,19 +41,19 @@ struct LogisticRegression : public ClassEncoder<LogisticRegression<Regularizer, 
     void fit_ (const Mat& X, const Veci& y)
     {
         if(numClasses == 2)
-            impl = new LogisticRegressionTwoClass<Regularizer, Optimizer, false>(alpha, optimizer);
+            impl = new LogisticRegressionTwoClass<Regularizer, Optimizer>(alpha, optimizer);
         
         else
         {
             if(multiClassType == "OVA")
-                impl = new LogisticRegressionOV<Regularizer, Optimizer, OVA, false>(alpha, optimizer);
+                impl = new OVA<LogisticRegressionTwoClass<Regularizer, Optimizer>>(alpha, optimizer);
 
             // else if(multiClassType == "OVO")
             //     impl = new LogisticRegressionHandler<OVO, LogisticRegressionTwoClass<Regularizer, Optimizer>>(alpha, optimizer);
         }
         
 
-        impl->fit(X, y);
+        impl->fit(X, y, numClasses);
     }
 
 

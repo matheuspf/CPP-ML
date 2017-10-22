@@ -6,24 +6,22 @@
 #include "../ClassEncoder.h"
 
 
-template <class Classifier, bool Encode = true>
-struct OVA : public ClassEncoder<OVA<Classifier, Encode>, Encode>
+template <class Classifier>
+struct OVA : public Classifier//, ClassEncoder<OVA<Classifier>>
 {
 public:
 
-    using Base = ClassEncoder<OVA<Classifier, Encode>, Encode>;
-    using Base::fit, Base::predict, Base::numClasses;
+    using Classifier::Classifier, Classifier::numClasses;
+
+    //using BaseEncoder = ClassEncoder<OVA<Classifier>>;
+    //using BaseEncoder::fit, BaseEncoder::predict, BaseEncoder::numClasses;
 
 
-    template <typename... Args>
-    OVA (Args&&... args) : classifierBase(std::forward<Args>(args)...) {}
-
-
-    OVA& fit_ (const Mat& X, const Veci& y)
+    void fit_ (const Mat& X, const Veci& y)
     {
         M = X.rows(), N = X.cols();
 
-        classifiers.resize(numClasses, classifierBase);
+        classifiers.resize(numClasses, static_cast<Classifier&>(*this));
 
         Veci yk(M);
 
@@ -32,13 +30,11 @@ public:
         {
             std::transform(std::begin(y), std::end(y), std::begin(yk), [&](int x)
             {
-                return x == k ? 1 : 0;
+                return x == k ? Classifier::classLabels[0] : Classifier::classLabels[1];
             });
 
-            classifiers[k].fit(X, yk);
+            classifiers[k].fit(X, yk, 2);
         }
-
-        return *this;
     }
 
 
@@ -91,8 +87,6 @@ public:
     int M, N;
     
     std::vector<Classifier> classifiers;
-
-    Classifier classifierBase;
 };
 
 

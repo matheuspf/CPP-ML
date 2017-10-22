@@ -7,7 +7,7 @@
 
 
 
-template <class Impl, bool Encode>
+template <class Impl>
 struct ClassEncoder
 {
     decltype(auto) fit (const Mat& X, const Veci& y, int numClasses_ = 0)
@@ -67,36 +67,6 @@ private:
 
     friend Impl;
 };
-
-
-
-template <class Impl>
-struct ClassEncoder<Impl, false>
-{
-    decltype(auto) fit (const Mat& X, const Veci& y)
-    {
-        return static_cast<Impl&>(*this).fit_(X, y);
-    }
-
-
-    auto predict (const Vec& x)
-    {
-        return static_cast<Impl&>(*this).predict_(x);
-    }
-
-    auto predict (const Mat& X)
-    {
-        return static_cast<Impl&>(*this).predict_(X);
-    }
-
-
-private:
-
-    ClassEncoder () {}
-    
-    friend Impl;
-};
-
 
 
 

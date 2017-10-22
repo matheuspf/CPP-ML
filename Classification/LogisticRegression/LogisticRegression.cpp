@@ -22,7 +22,10 @@ int main ()
 
     // transform(begin(y), end(y), begin(y), [](int x){ return x == 2 ? 0 : x; });
 
+    
     Mat X = readMat("../../Data/Wine.txt", ',');
+
+    //X = X.block(0, 0, 130, X.cols()-1);
 
     Veci y = X.col(0).cast<int>();
 
@@ -54,6 +57,7 @@ int main ()
 
 
     LogisticRegression<L2, Optimizer> lr(1e-1, opt, "OVA");
+    //OVA<LogisticRegressionTwoClass<L2, Optimizer>> lr(1e-1, opt);
 
     //OVA<LogisticRegression<L1, Optimizer>> lr(1e-1, opt);
     //0.977528   0.018

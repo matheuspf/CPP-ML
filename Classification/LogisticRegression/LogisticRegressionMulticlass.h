@@ -9,16 +9,16 @@
 
 
 /// To make class a base of LogisticRegressionBaseVirtual
-template <class Regularizer, class Optimizer, template <class, bool> class OV, bool Encode = true>
-struct LogisticRegressionOV : public OV<LogisticRegressionTwoClass<Regularizer, Optimizer, false>, Encode>,
-                                        LogisticRegressionBase<Regularizer, Optimizer>
+template <class Regularizer, class Optimizer, template <class> class OV>
+struct LogisticRegressionOV : public OV<LogisticRegressionTwoClass<Regularizer, Optimizer>>,
+                                        LogisticRegressionTwoClass<Regularizer, Optimizer>
 {
-    using Base = OV<LogisticRegressionTwoClass<Regularizer, Optimizer, false>, Encode>;
+    using Base = OV<LogisticRegressionTwoClass<Regularizer, Optimizer>>;
     using Base::Base;
 
 
     void fit (const Mat& X, const Veci& y, int numClasses_ = 0)
-    {
+    {db("AAAAAAAAAAAA");
         Base::fit(X, y, numClasses_);
     }
 
