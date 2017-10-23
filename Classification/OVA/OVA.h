@@ -7,11 +7,14 @@
 
 
 template <class Classifier>
-struct OVA : public Classifier
+struct OVA : public Classifier, ClassEncoder<OVA<Classifier>>
 {
 public:
 
-    using Classifier::Classifier, Classifier::numClasses;
+    using Classifier::Classifier;
+
+    using Encoder = ClassEncoder<OVA<Classifier>>;
+    using Encoder::numClasses, Encoder::fit, Encoder::predict;
 
 
     void fit_ (const Mat& X, const Veci& y)
@@ -30,7 +33,7 @@ public:
                 return x == k ? Classifier::classLabels[0] : Classifier::classLabels[1];
             });
 
-            classifiers[k].fit(X, yk, 2);
+            classifiers[k].fit_(X, yk);
         }
     }
 
@@ -84,8 +87,12 @@ public:
     int M, N;
     
     std::vector<Classifier> classifiers;
+
+    static std::vector<int> classLabels;    
 };
 
+template <class Classifier>
+std::vector<int> OVA<Classifier>::classLabels = {};
 
 
 #endif // CPP_ML_OVA_H

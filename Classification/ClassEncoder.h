@@ -6,8 +6,10 @@
 #include "../Preprocessing/Preprocess.h"
 
 
+HAS_VAR(classLabels);
 
-template <class Impl>
+
+template <class Classifier>
 struct ClassEncoder
 {
     decltype(auto) fit (const Mat& X, const Veci& y, int numClasses_ = 0)
@@ -17,19 +19,36 @@ struct ClassEncoder
 
         if(encodeLabels)
         {
-            Veci y_enc = lenc.fitTransform(y);
+            Veci y_enc = encode(y);
             numClasses = lenc.numClasses;
 
-            return static_cast<Impl&>(*this).fit_(X, y_enc);
+            return static_cast<Classifier&>(*this).fit_(X, y_enc);
         }
             
-        return static_cast<Impl&>(*this).fit_(X, y);
+        return static_cast<Classifier&>(*this).fit_(X, y);
     }
+
+
+    
+
+    template <class T = Classifier, std::enable_if_t<has_classLabels<T>(), int> = 0>
+    Veci encode (const Veci& y)
+    {
+        return lenc.fitTransform(y, Classifier::classLabels);
+    }
+
+    template <class T = Classifier, std::enable_if_t<!has_classLabels<T>(), int> = 0>
+    Veci encode (const Veci& y)
+    {
+        return lenc.fitTransform(y);
+    }
+
+
 
 
     auto predict (const Vec& x)
     {
-        auto label = static_cast<Impl&>(*this).predict_(x);
+        auto label = static_cast<Classifier&>(*this).predict_(x);
 
         if(encodeLabels)
             label = lenc.reverseMap[label];
@@ -39,7 +58,7 @@ struct ClassEncoder
 
     auto predict (const Mat& X)
     {
-        auto labels = static_cast<Impl&>(*this).predict_(X);
+        auto labels = static_cast<Classifier&>(*this).predict_(X);
 
         if(encodeLabels)
         {
@@ -65,7 +84,7 @@ private:
 
     ClassEncoder () {}
 
-    friend Impl;
+    friend Classifier;
 };
 
 

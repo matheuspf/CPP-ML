@@ -13,8 +13,8 @@ template <class Regularizer, class Optimizer>
 struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, Optimizer>
 {
     using Base = LogisticRegressionBase<Regularizer, Optimizer>;
-    using Base::Base, Base::M, Base::N, Base::alpha, Base::regularizer, Base::optimizer, Base::sigmoid, Base::fit, Base::predict;
-    
+    using Base::Base, Base::M, Base::N, Base::alpha, Base::regularizer, Base::optimizer, Base::sigmoid;
+
 
     void fit_ (const Mat& X_, const Veci& y)
     {

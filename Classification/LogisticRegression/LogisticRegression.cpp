@@ -56,7 +56,7 @@ int main ()
     // opt.gTol = 1e-3;
 
 
-    LogisticRegression<L2, Optimizer> lr(1e-1, opt, "OVO");
+    LogisticRegression<L2, Optimizer> lr(1e-1, opt, "OVA");
     //OVA<LogisticRegressionTwoClass<L2, Optimizer>> lr(1e-1, opt);
 
     //OVA<LogisticRegression<L1, Optimizer>> lr(1e-1, opt);
