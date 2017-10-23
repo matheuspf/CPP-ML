@@ -11,13 +11,13 @@
 
 #include "../OVA/OVA.h"
 
+#include "../OVO/OVO.h"
+
 #include "LogisticRegressionTwoClass.h"
 
 #include "LogisticRegressionMulticlass.h"
 
 #include "../ClassEncoder.h"
-
-//#include "../OVO/OVO.h"
 
 
 
@@ -48,8 +48,8 @@ struct LogisticRegression : public ClassEncoder<LogisticRegression<Regularizer, 
             if(multiClassType == "OVA")
                 impl = new OVA<LogisticRegressionTwoClass<Regularizer, Optimizer>>(alpha, optimizer);
 
-            // else if(multiClassType == "OVO")
-            //     impl = new LogisticRegressionHandler<OVO, LogisticRegressionTwoClass<Regularizer, Optimizer>>(alpha, optimizer);
+            else if(multiClassType == "OVO")
+                impl = new OVO<LogisticRegressionTwoClass<Regularizer, Optimizer>>(alpha, optimizer);
         }
         
 

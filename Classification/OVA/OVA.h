@@ -7,14 +7,11 @@
 
 
 template <class Classifier>
-struct OVA : public Classifier//, ClassEncoder<OVA<Classifier>>
+struct OVA : public Classifier
 {
 public:
 
     using Classifier::Classifier, Classifier::numClasses;
-
-    //using BaseEncoder = ClassEncoder<OVA<Classifier>>;
-    //using BaseEncoder::fit, BaseEncoder::predict, BaseEncoder::numClasses;
 
 
     void fit_ (const Mat& X, const Veci& y)
