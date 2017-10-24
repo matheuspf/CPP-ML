@@ -5,20 +5,28 @@
 
 #include "../../Preprocessing/Preprocess.h"
 
+#include "../Classifier.h"
 
-template <class Classifier>
-struct OVO : public Classifier
+
+
+template <class Cls>
+struct OVO : public std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls>>>
 {
 public:
 
-    using Classifier::Classifier, Classifier::numClasses;
+    using Base = std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls>>>;
+    using Base::numClasses, Base::fit, Base::predict, Base::positiveClass, Base::negativeClass;
+
+
+    template <typename... Args>
+    OVO (Args&&... args) : baseClassifier(std::forward<Args>(args)...) {}
 
 
     void fit_ (const Mat& X, const Veci& y)
     {
         M = X.rows(), N = X.cols();
 
-        classifiers = MatX<Classifier>::Constant(numClasses, numClasses, static_cast<Classifier&>(*this));
+        classifiers = MatX<Cls>::Constant(numClasses, numClasses, baseClassifier);
 
         std::vector<std::vector<int>> indexes(numClasses);
 
@@ -40,12 +48,12 @@ public:
                 Mat Xk = index(X, ids);
                 Veci yk = index(y, ids);
 
-                std::transform(std::begin(yk), std::end(yk), std::begin(yk), [k](int x)
+                std::transform(std::begin(yk), std::end(yk), std::begin(yk), [&](int x)
                 {
-                    return x == k ? Classifier::classLabels[0] : Classifier::classLabels[1];
+                    return x == k ? positiveClass : negativeClass;
                 });
 
-                classifiers(k, l).fit(Xk, yk, 2);
+                classifiers(k, l).fit_(Xk, yk);
             }
         }
     }
@@ -95,9 +103,11 @@ public:
 
 
 
+    Cls baseClassifier;    
+
     int M, N;
 
-    MatX<Classifier> classifiers;
+    MatX<Cls> classifiers;
 };
 
 

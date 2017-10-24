@@ -3,17 +3,27 @@
 
 #include "../../Modelo.h"
 
-#include "../ClassEncoder.h"
+#include "../Classifier.h"
 
 #include "LogisticRegressionBase.h"
 
 
 
-template <class Regularizer, class Optimizer>
-struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, Optimizer>
+namespace impl
+{
+
+template <class Regularizer, class Optimizer, bool Polymorphic = false>
+struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, Optimizer>,
+                                    std::conditional_t<Polymorphic, poly::Classifier, 
+                                                                    Classifier<LogisticRegressionTwoClass<Regularizer,
+                                                                                                          Optimizer>>>
 {
     using Base = LogisticRegressionBase<Regularizer, Optimizer>;
     using Base::Base, Base::M, Base::N, Base::alpha, Base::regularizer, Base::optimizer, Base::sigmoid;
+
+    using BaseCls = std::conditional_t<Polymorphic, poly::Classifier, 
+                                                    Classifier<LogisticRegressionTwoClass<Regularizer, Optimizer>>>;
+    using BaseCls::fit, BaseCls::predict;
 
 
     void fit_ (const Mat& X_, const Veci& y)
@@ -93,9 +103,20 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
     double intercept;
 };
 
+} // namespace impl
 
 
 
+template <class Regularizer, class Optimizer>
+using LogisticRegressionTwoClass = impl::LogisticRegressionTwoClass<Regularizer, Optimizer, false>;
+
+
+namespace poly
+{
+    template <class Regularizer, class Optimizer>
+    using LogisticRegressionTwoClass = impl::LogisticRegressionTwoClass<Regularizer, Optimizer, true>;
+}
+              
 
 
 

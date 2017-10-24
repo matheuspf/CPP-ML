@@ -14,7 +14,7 @@ struct OVA : public std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Cla
 public:
 
     using Base = std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls>>>;
-    using Base::numClasses, Base::fit, Base::predict;
+    using Base::numClasses, Base::fit, Base::predict, Base::positiveClass, Base::negativeClass;    
 
 
     template <typename... Args>
