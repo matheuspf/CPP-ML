@@ -5,18 +5,26 @@
 
 #include "../../Kernels.h"
 
-#include "../ClassEncoder.h"
+#include "../Classifier.h"
 
 #include "../../Preprocessing/Preprocess.h"
 
 
-
-template <class Kernel = LinearKernel>
-struct RLSC : public ClassEncoder<RLSC<Kernel>>
+namespace impl
 {
-    RLSC (double alpha = 0.0, const Kernel& kernel = Kernel()) : alpha(alpha), kernel(kernel) {}
 
-    RLSC (const Kernel& kernel, double alpha = 0.0) : alpha(alpha), kernel(kernel) {}
+template <class Kernel = LinearKernel, bool Polymorphic = false>
+struct RLSC : public std::conditional_t<Polymorphic, poly::Classifier, Classifier<RLSC<Kernel, Polymorphic>>>
+{
+    using Base = std::conditional_t<Polymorphic, poly::Classifier, Classifier<RLSC<Kernel, Polymorphic>>>;
+
+
+    RLSC (double alpha = 0.0, const Kernel& kernel = Kernel()) :
+          Base(1, -1), alpha(alpha), kernel(kernel) {}
+
+    RLSC (const Kernel& kernel, double alpha = 0.0) : 
+          Base(1, -1), alpha(alpha), kernel(kernel) {}
+
 
 
     void fit_ (const Mat& X, const Veci& y)
@@ -68,14 +76,22 @@ struct RLSC : public ClassEncoder<RLSC<Kernel>>
     Mat Z;
 
     Vec w;
-
-
-    static std::vector<int> classLabels;
 };
 
+} // namespace impl
 
-template <class Kernel>  
-std::vector<int> RLSC<Kernel>::classLabels = {1, -1};
+
+template <class Kernel = LinearKernel>
+using RLSC = impl::RLSC<Kernel, false>;
+
+
+namespace poly
+{
+
+template <class Kernel = LinearKernel>
+using RLSC = impl::RLSC<Kernel, true>; 
+
+}
 
 
 

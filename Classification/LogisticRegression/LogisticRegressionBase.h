@@ -3,8 +3,12 @@
 
 #include "../../Modelo.h"
 
-#include "../ClassEncoder.h"
+#include "../Classifier.h"
 
+
+
+namespace impl
+{
 
 template <class Regularizer, class Optimizer>
 struct LogisticRegressionBase : public ClassEncoder<LogisticRegressionBase<Regularizer, Optimizer>>
@@ -49,13 +53,9 @@ struct LogisticRegressionBase : public ClassEncoder<LogisticRegressionBase<Regul
     Regularizer regularizer;
 
     Optimizer optimizer;
-
-    static std::vector<int> classLabels;
 };
 
-
-template <class Regularizer, class Optimizer>
-std::vector<int> LogisticRegressionBase<Regularizer, Optimizer>::classLabels = {1, 0};
+}
 
 
 

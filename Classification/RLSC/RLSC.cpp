@@ -51,8 +51,13 @@ int main ()
 
 
     //RLSC<LinearKernel> rlsc(1e-1);
+    // poly::Classifier* cls = new poly::RLSC<LinearKernel>(1e-1);
+    // poly::Classifier& rlsc = *cls;
+    
 
-    OVA<RLSC<LinearKernel>> rlsc(1e-1);
+    //OVA<poly::RLSC<LinearKernel>> rlsc(1e-1);
+    poly::Classifier* cls = new OVA<poly::RLSC<LinearKernel>>(1e-1);
+    poly::Classifier& rlsc = *cls;
 
 
     // vector<double> alphas;

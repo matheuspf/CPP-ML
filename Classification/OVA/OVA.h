@@ -3,25 +3,29 @@
 
 #include "../../Modelo.h"
 
-#include "../ClassEncoder.h"
+#include "../Classifier.h"
 
 
-template <class Classifier>
-struct OVA : public Classifier, ClassEncoder<OVA<Classifier>>
+
+
+template <class Cls>
+struct OVA : public std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls>>>
 {
 public:
 
-    using Classifier::Classifier;
+    using Base = std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls>>>;
+    using Base::numClasses, Base::fit, Base::predict;
 
-    using Encoder = ClassEncoder<OVA<Classifier>>;
-    using Encoder::numClasses, Encoder::fit, Encoder::predict;
 
+    template <typename... Args>
+    OVA (Args&&... args) : baseClassifier(std::forward<Args>(args)...) {}
+    
 
     void fit_ (const Mat& X, const Veci& y)
     {
         M = X.rows(), N = X.cols();
 
-        classifiers.resize(numClasses, static_cast<Classifier&>(*this));
+        classifiers.resize(numClasses, baseClassifier);
 
         Veci yk(M);
 
@@ -30,7 +34,7 @@ public:
         {
             std::transform(std::begin(y), std::end(y), std::begin(yk), [&](int x)
             {
-                return x == k ? Classifier::classLabels[0] : Classifier::classLabels[1];
+                return x == k ? Base::positiveClass : Base::negativeClass;
             });
 
             classifiers[k].fit_(X, yk);
@@ -86,13 +90,10 @@ public:
 
     int M, N;
     
-    std::vector<Classifier> classifiers;
+    std::vector<Cls> classifiers;
 
-    static std::vector<int> classLabels;    
+    Cls baseClassifier;
 };
-
-template <class Classifier>
-std::vector<int> OVA<Classifier>::classLabels = {};
 
 
 #endif // CPP_ML_OVA_H
