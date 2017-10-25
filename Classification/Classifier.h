@@ -6,15 +6,14 @@
 #include "../Preprocessing/Preprocess.h"
 
 
-#define USING_CLASSIFIER_BASE(CLASSIFIER) using Base = CLASSIFIER;    \
-                                          using Base::Base,           \
-                                                Base::lenc,           \
-                                                Base::numClasses,     \
-                                                Base::positiveClass,  \
-                                                Base::negativeClass,  \
-                                                Base::encodeLabels,   \
-                                                Base::fit,            \
-                                                Base::predict;
+#define USING_CLASSIFIER(...) using BaseClassifier = __VA_ARGS__;   \
+                              using BaseClassifier::lenc,           \
+                                    BaseClassifier::numClasses,     \
+                                    BaseClassifier::positiveClass,  \
+                                    BaseClassifier::negativeClass,  \
+                                    BaseClassifier::encodeLabels,   \
+                                    BaseClassifier::fit,            \
+                                    BaseClassifier::predict;
 
 
 
@@ -99,7 +98,8 @@ struct ClassifierBase
 template <class Impl>
 struct Classifier : public ClassifierBase<Classifier<Impl>>
 {
-    USING_CLASSIFIER_BASE(ClassifierBase<Classifier<Impl>>);
+    USING_CLASSIFIER(ClassifierBase<Classifier<Impl>>);
+    using BaseClassifier::BaseClassifier;
 
 
     decltype(auto) impl ()
@@ -140,7 +140,8 @@ namespace poly
 
 struct Classifier : public ClassifierBase<Classifier>
 {
-    USING_CLASSIFIER_BASE(ClassifierBase<Classifier>);
+    USING_CLASSIFIER(ClassifierBase<Classifier>);
+    using BaseClassifier::BaseClassifier;
 
 
     decltype(auto) impl ()
@@ -160,8 +161,10 @@ struct Classifier : public ClassifierBase<Classifier>
 
 
 
+template <class T, bool Polymorphic = false>
+using PickClassifierBase = std::conditional_t<Polymorphic, poly::Classifier, Classifier<T>>;
 
-#undef USING_CLASSIFIER_BASE
+
 
 
 

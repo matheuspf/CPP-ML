@@ -13,8 +13,7 @@ struct OVA : public std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Cla
 {
 public:
 
-    using Base = std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls>>>;
-    using Base::numClasses, Base::fit, Base::predict, Base::positiveClass, Base::negativeClass;    
+    USING_CLASSIFIER(std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls>>>);
 
 
     template <typename... Args>
@@ -34,7 +33,7 @@ public:
         {
             std::transform(std::begin(y), std::end(y), std::begin(yk), [&](int x)
             {
-                return x == k ? Base::positiveClass : Base::negativeClass;
+                return x == k ? positiveClass : negativeClass;
             });
 
             classifiers[k].fit_(X, yk);

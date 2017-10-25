@@ -15,7 +15,7 @@
 
 #include "LogisticRegressionTwoClass.h"
 
-#include "LogisticRegressionMulticlass.h"
+//#include "LogisticRegressionMulticlass.h"
 
 #include "../Classifier.h"
 
@@ -24,16 +24,12 @@ namespace impl
 {
 
 template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool Polymorphic = false>
-struct LogisticRegression : std::conditional_t<Polymorphic, poly::Classifier, 
-                                               Classifier<LogisticRegression<Regularizer, Optimizer>>>
+struct LogisticRegression : PickClassifierBase<LogisticRegression<Regularizer, Optimizer, Polymorphic>, Polymorphic>
 {
-    using Base = std::conditional_t<Polymorphic, poly::Classifier, 
-                                                 Classifier<LogisticRegression<Regularizer, Optimizer>>>;
-    using Base::numClasses, Base::fit, Base::predict, Base::positiveClass, Base::negativeClass;
-                                                 
+    USING_CLASSIFIER(PickClassifierBase<LogisticRegression<Regularizer, Optimizer, Polymorphic>, Polymorphic>);
 
 
-    LogisticRegression (double alpha = 1e-8, const Optimizer& optimizer = Optimizer(), std::string multiClassType = "OVA") :
+    LogisticRegression (double alpha, const Optimizer& optimizer = Optimizer(), std::string multiClassType = "OVA") :
                         alpha(alpha), optimizer(optimizer), multiClassType(multiClassType) {}
 
     LogisticRegression (const Optimizer& optimizer, double alpha = 1e-8, std::string multiClassType = "OVA") :

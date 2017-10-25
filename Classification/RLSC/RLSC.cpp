@@ -27,7 +27,7 @@ int main ()
 
     Mat X = readMat("../../Data/Wine.txt", ',');
 
-    //X = X.block(0, 0, 130, X.cols());
+    X = X.block(0, 0, 130, X.cols());
 
     Veci y = X.col(0).cast<int>();
 
@@ -51,13 +51,13 @@ int main ()
 
 
     //RLSC<LinearKernel> rlsc(1e-1);
-    // poly::Classifier* cls = new poly::RLSC<LinearKernel>(1e-1);
-    // poly::Classifier& rlsc = *cls;
+    poly::Classifier* cls = new poly::RLSC<LinearKernel>(1e-1);
+    poly::Classifier& rlsc = *cls;
     
 
     //OVA<poly::RLSC<LinearKernel>> rlsc(1e-1);
-    poly::Classifier* cls = new OVA<poly::RLSC<LinearKernel>>(1e-1);
-    poly::Classifier& rlsc = *cls;
+    // poly::Classifier* cls = new OVA<poly::RLSC<LinearKernel>>(1e-1);
+    // poly::Classifier& rlsc = *cls;
 
 
     // vector<double> alphas;

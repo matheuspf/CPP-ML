@@ -10,12 +10,11 @@
 
 
 template <class Cls>
-struct OVO : public std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls>>>
+struct OVO : public std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVO<Cls>>>
 {
 public:
 
-    using Base = std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls>>>;
-    using Base::numClasses, Base::fit, Base::predict, Base::positiveClass, Base::negativeClass;
+    USING_CLASSIFIER(std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVO<Cls>>>);
 
 
     template <typename... Args>

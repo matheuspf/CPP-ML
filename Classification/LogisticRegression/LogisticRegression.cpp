@@ -56,7 +56,7 @@ int main ()
     // opt.gTol = 1e-3;
 
 
-    LogisticRegression<L2, Optimizer> lr(1e-1, opt, "OVO");
+    LogisticRegression<L2, Optimizer> lr(1e-1, opt, "OVA");
     // auto cls = std::make_unique<poly::LogisticRegression<L2, Optimizer>>(1e-1, opt, "OVO");
     // poly::Classifier& lr = *cls;
 

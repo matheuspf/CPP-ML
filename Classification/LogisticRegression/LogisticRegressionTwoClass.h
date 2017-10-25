@@ -14,16 +14,11 @@ namespace impl
 
 template <class Regularizer, class Optimizer, bool Polymorphic = false>
 struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, Optimizer>,
-                                    std::conditional_t<Polymorphic, poly::Classifier, 
-                                                                    Classifier<LogisticRegressionTwoClass<Regularizer,
-                                                                                                          Optimizer>>>
+                                    PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer, Polymorphic>,
+                                                                                                          Polymorphic>
 {
-    using Base = LogisticRegressionBase<Regularizer, Optimizer>;
-    using Base::Base, Base::M, Base::N, Base::alpha, Base::regularizer, Base::optimizer, Base::sigmoid;
-
-    using BaseCls = std::conditional_t<Polymorphic, poly::Classifier, 
-                                                    Classifier<LogisticRegressionTwoClass<Regularizer, Optimizer>>>;
-    using BaseCls::fit, BaseCls::predict;
+    USING_LOGISTIC_REGRESSION(LogisticRegressionBase<Regularizer, Optimizer>);
+    USING_CLASSIFIER(PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer, Polymorphic>, Polymorphic>);
 
 
     void fit_ (const Mat& X_, const Veci& y)

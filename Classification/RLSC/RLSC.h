@@ -14,16 +14,16 @@ namespace impl
 {
 
 template <class Kernel = LinearKernel, bool Polymorphic = false>
-struct RLSC : public std::conditional_t<Polymorphic, poly::Classifier, Classifier<RLSC<Kernel, Polymorphic>>>
+struct RLSC : public PickClassifierBase<RLSC<Kernel, Polymorphic>, Polymorphic>
 {
-    using Base = std::conditional_t<Polymorphic, poly::Classifier, Classifier<RLSC<Kernel, Polymorphic>>>;
+    USING_CLASSIFIER(PickClassifierBase<RLSC<Kernel, Polymorphic>, Polymorphic>);
 
 
     RLSC (double alpha = 0.0, const Kernel& kernel = Kernel()) :
-          Base(1, -1), alpha(alpha), kernel(kernel) {}
+          BaseClassifier(1, -1), alpha(alpha), kernel(kernel) {}
 
     RLSC (const Kernel& kernel, double alpha = 0.0) : 
-          Base(1, -1), alpha(alpha), kernel(kernel) {}
+          BaseClassifier(1, -1), alpha(alpha), kernel(kernel) {}
 
 
 
@@ -42,14 +42,17 @@ struct RLSC : public std::conditional_t<Polymorphic, poly::Classifier, Classifie
 
     int predict_ (const Vec& x)
     {
-        return predictMargin(x) > 0.0 ? 1 : -1;
+        return predictMargin(x) > 0.0 ? positiveClass : negativeClass;
     }
 
     Veci predict_ (const Mat& X)
     {
         Vec res = predictMargin(X);
         
-        std::transform(std::begin(res), std::end(res), std::begin(res), [](double x){ return x > 0.0 ? 1.0 : -1.0; });
+        std::transform(std::begin(res), std::end(res), std::begin(res), [&](double x)
+        {
+            return x > 0.0 ? positiveClass : negativeClass;
+        });
 
         return res.cast<int>();
     }
