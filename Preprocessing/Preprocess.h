@@ -268,6 +268,13 @@ struct LabelEncoder
 	}
 
 
+	template <typename... Labels, std::enable_if_t<And_v<std::is_integral_v<std::decay_t<Labels>>...>, int> = 0>
+	VecX<T> transform (const VecX<T>& x, Labels... labels)
+	{
+		return transform(x, std::vector<int>{labels...});
+	}
+
+
 	VecX<T> transform (const VecX<T>& x, std::vector<int> labels = std::vector<int>())
 	{
 		if(labels.empty())
@@ -300,9 +307,10 @@ struct LabelEncoder
 	}
 
 
-	VecX<T> fitTransform (const VecX<T>& x, const std::vector<int>& labels = std::vector<int>())
+	template <typename... Labels>
+	VecX<T> fitTransform (const VecX<T>& x, Labels&&... labels)
 	{
-		return fit(x).transform(x, labels);
+		return fit(x).transform(x, std::forward<Labels>(labels)...);
 	}
 
 
