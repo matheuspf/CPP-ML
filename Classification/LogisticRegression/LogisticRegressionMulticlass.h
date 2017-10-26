@@ -12,7 +12,7 @@
 namespace impl
 {
 
-template <class Regularizer, class Optimizer, bool Polymorphic = false>
+template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool Polymorphic = false>
 struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer, Optimizer>,
                                     PickClassifierBase<LogisticRegressionMultiClass<Regularizer, Optimizer, Polymorphic>,
                                                                                                           Polymorphic>
@@ -32,85 +32,115 @@ struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer,
 
         auto func = [&](const Vec& w) -> double
         {
-            Mat 
+            Mat W = Mat::Map(&w(0), numClasses, N);
 
-            ArrayXd sig = sigmoid((X * w).array());
+            double res = 0;
 
-            return -(y.array().cast<double>() * log(sig) + (1.0 - y.array().cast<double>()) * log(1.0 - sig)).sum()
-                    + 0.5 * alpha * regularizer(w);
-                    //+ 0.5 * alpha * regularizer(Vec(w.head(N-1)));
+            for(int i = 0; i < M; ++i)
+                res += logSoftmax(W * X.row(i).transpose(), y(i));
+
+            //db(-res, "     ", 0.5 * alpha * regularizer(w), "\n");
+
+            return -res + 0.5 * alpha * regularizer(w);
         };
 
         auto grad = [&](const Vec& w) -> Vec
         {
-            return X.transpose() * (sigmoid((X * w).array()).matrix() - y.cast<double>()) +
-                    0.5 * alpha * regularizer.gradient(w);
+            Mat W = Mat::Map(&w(0), numClasses, N);
+            
+            Mat grad = Mat::Constant(numClasses, N, 0.0);
+
+            for(int i = 0; i < M; ++i)
+            {
+                Vec sm = logSoftmax(W * X.row(i).transpose());
+
+                sm(y(i)) -= 1.0;
+
+                grad += sm * X.row(i);
+            }
+            
+            return Vec::Map(&grad(0), numClasses * N) + 0.5 * alpha * regularizer.gradient(w);
         };
 
 
-        w = Vec::Constant(N, 0.0);
+        RandDouble randDouble(0);
+
+        Vec w0 = Vec::NullaryExpr(numClasses * N, [&](int){ return randDouble(-0.1, 0.1); });
+        //Vec w0 = Vec::Constant(numClasses * N, 0.0);
+
+        w0 = optimizer(func, grad, w0);
         
-        w = optimizer(func, grad, w);
 
+        W = Mat::Map(&w0(0), numClasses, N);
 
-        intercept = w(N-1);
+        intercept = W.col(N-1);
 
-        w.conservativeResize(N-1);
+        W.conservativeResize(Eigen::NoChange, N-1);
     }
 
 
 
     int predict_ (const Vec& x)
     {
-        return predictMargin(x) > 0.0;
+        Vec vals = W * x + intercept;
+
+        double b = -1e20;
+        int p = 0;
+
+        for(int i = 0; i < numClasses; ++i)
+            if(vals(i) > b)
+                b = vals(i), p = i;
+
+        return p;
     }
 
     Veci predict_ (const Mat& X)
     {
-        return (ArrayXd(predictMargin(X)) > 0.0).cast<int>();
+        Veci vals(X.rows());
+
+        for(int i = 0; i < X.rows(); ++i)
+            vals(i) = predict_(Vec(X.row(i)));
+
+        return vals;
     }
 
 
 
-    double predictProb (const Vec& x)
-    {
-        return sigmoid(predictMargin(x));
-    }
+    // double predictProb (const Vec& x)
+    // {
+    // }
 
-    Vec predictProb (const Mat& X)
-    {
-        return sigmoid(predictMargin(X).array());
-    }
+    // Vec predictProb (const Mat& X)
+    // {
+    // }
 
 
-    double predictMargin (const Vec& x)
-    {
-        return w.dot(x) + intercept;
-    }
+    // double predictMargin (const Vec& x)
+    // {
+    // }
 
-    Vec predictMargin (const Mat& X)
-    {
-        return (X * w).array() + intercept;
-    }
+    // Vec predictMargin (const Mat& X)
+    // {
+    // }
 
 
 
-    Vec w;
+    Mat W;
     
-    double intercept;
+    Vec intercept;
 };
 
 } // namespace impl
 
 
 
-template <class Regularizer, class Optimizer>
+template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
 using LogisticRegressionMultiClass = impl::LogisticRegressionMultiClass<Regularizer, Optimizer, false>;
 
 
 namespace poly
 {
-    template <class Regularizer, class Optimizer>
+    template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
     using LogisticRegressionMultiClass = impl::LogisticRegressionMultiClass<Regularizer, Optimizer, true>;
 }
 

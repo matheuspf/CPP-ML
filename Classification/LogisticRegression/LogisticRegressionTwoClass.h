@@ -12,7 +12,7 @@
 namespace impl
 {
 
-template <class Regularizer, class Optimizer, bool Polymorphic = false>
+template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool Polymorphic = false>
 struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, Optimizer>,
                                     PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer, Polymorphic>,
                                                                                                           Polymorphic>
@@ -102,13 +102,13 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
 
 
 
-template <class Regularizer, class Optimizer>
+template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
 using LogisticRegressionTwoClass = impl::LogisticRegressionTwoClass<Regularizer, Optimizer, false>;
 
 
 namespace poly
 {
-    template <class Regularizer, class Optimizer>
+    template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
     using LogisticRegressionTwoClass = impl::LogisticRegressionTwoClass<Regularizer, Optimizer, true>;
 }
               

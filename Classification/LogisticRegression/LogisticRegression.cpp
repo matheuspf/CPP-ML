@@ -2,6 +2,8 @@
 
 #include "../../Preprocessing/Preprocess.h"
 
+#include "../../Preprocessing/ModelSelection.h"
+
 #include "../../Optimization/LineSearch/Backtracking/Backtracking.h"
 
 #include "../../Optimization/CG/CG.h"
@@ -31,6 +33,7 @@ int main ()
 
     X = X.block(0, 1, X.rows(), X.cols()-1);
 
+    //X = polyExpansion(X, 2, true);
 
     auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.5, 1);
 
@@ -42,27 +45,27 @@ int main ()
 
 
     //using Optimizer = Newton<StrongWolfe, SimplyInvert<Eigen::LLT>>;
-    //using Optimizer = CG<HS, Backtracking>;
-    using Optimizer = BFGS<StrongWolfe, BFGS_Diagonal>;
+    // using Optimizer = BFGS<StrongWolfe, BFGS_Diagonal>;
 
-    Optimizer opt(StrongWolfe(1.0, 1e-2));
+    // Optimizer opt(StrongWolfe(1.0, 1e-2));
 
-    opt.maxIter = 10;
-    opt.gTol = 1e-3;
-
-    // Optimizer opt;
-
-    // opt.maxIterations = 10;
+    // opt.maxIter = 10;
     // opt.gTol = 1e-3;
 
 
-    LogisticRegression<L2, Optimizer> lr(1e-1, opt, "OVA");
+    using Optimizer = CG<HS, Backtracking>;
+    Optimizer opt;
+
+    opt.maxIterations = 10;
+    opt.gTol = 1e-3;
+
+
+    //LogisticRegression<L2, Optimizer> lr(1e-1, opt, "OVA");
     // auto cls = std::make_unique<poly::LogisticRegression<L2, Optimizer>>(1e-1, opt, "OVO");
     // poly::Classifier& lr = *cls;
 
+    LogisticRegression<L2, Optimizer> lr(1e-5, opt, "Multi");
 
-
-    Veci y_pred;
 
 
     double runTime = benchmark([&]
@@ -70,11 +73,28 @@ int main ()
         lr.fit(X_train, y_train);
     });
 
-    y_pred = lr.predict(X_test);
+    Veci y_pred = lr.predict(X_test);
+
+
+
+    // vector<double> alphas;
+
+    // for(double x = -5; x <= 5; x += 0.5)
+    //     alphas.pb(pow(10, x));
+
+    // auto gs = makeGridsearchCV(lr, make_pair([](auto& cls, double a){ cls.alpha = a; }, alphas), 5, Accuracy());
+
+    // gs.fit(X_train, y_train);
+
+    // lr = gs.bestEstimator;
+
+    // lr.fit(X_train, y_train);
+
+    // Veci y_pred = lr.predict(X_test);
     
 
 
-    //db(lr.w.transpose(), "     ", lr.intercept, "\n");
+    //db(lr.W, "\n\n", lr.intercept.transpose(), "\n\n", lr.alpha, "\n\n\n");
 
     db(y_test.transpose(), "\n", y_pred.transpose(), "\n");
 

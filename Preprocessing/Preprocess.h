@@ -214,12 +214,17 @@ struct OneHotEncoding
 
 
 
-Mat polyExpansion (const Mat& X, int degree = 2)
+Mat polyExpansion (const Mat& X, int degree = 2, bool correlation = false)
 {
 	int M = X.rows(), N = X.cols(), P = N * degree;
 
-	//Mat Z(M, P + degree * (N * (N - 1)) / 2);
-	Mat Z(M, P + N * ((N - 1)) / 2);
+	Mat Z;
+
+	if(correlation)
+		Z = Mat(M, N * degree + (N * (N - 1)) / 2);
+	
+	else
+		Z = Mat(M, N * degree);
 
 
 	for(int i = 0; i < M; ++i)
@@ -227,10 +232,14 @@ Mat polyExpansion (const Mat& X, int degree = 2)
 			for(int k = 0; k < degree; ++k)
 				Z(i, degree * j + k) = pow(X(i, j), k+1);
 
-	// for(int i = 0; i < M; ++i)
-	// 	for(int j = 0, l = 0; j < N; ++j)
-	// 		for(int k = j+1; k < N; ++k, ++l)
-	// 			Z(i, P + l) = X(i, j) * X(i, k);
+
+	if(correlation)
+	{
+		for(int i = 0; i < M; ++i)
+			for(int j = 0, l = 0; j < N; ++j)
+				for(int k = j+1; k < N; ++k, ++l)
+					Z(i, N * degree + l) = X(i, j) * X(i, k);
+	}
 
 	// for(int i = 0; i < M; ++i)
 	// 	for(int a = 0, l = 0; a < degree; ++a)

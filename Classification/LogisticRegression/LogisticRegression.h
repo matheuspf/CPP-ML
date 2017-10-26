@@ -15,7 +15,7 @@
 
 #include "LogisticRegressionTwoClass.h"
 
-//#include "LogisticRegressionMulticlass.h"
+#include "LogisticRegressionMulticlass.h"
 
 #include "../Classifier.h"
 
@@ -51,6 +51,9 @@ struct LogisticRegression : PickClassifierBase<LogisticRegression<Regularizer, O
 
             else if(multiClassType == "OVO")
                 impl = std::make_unique<OVO<poly::LogisticRegressionTwoClass<Regularizer, Optimizer>>>(alpha, optimizer);
+
+            else if(multiClassType == "Multi")
+                impl = std::make_unique<poly::LogisticRegressionMultiClass<Regularizer, Optimizer>>(alpha, optimizer);
         }
         
 

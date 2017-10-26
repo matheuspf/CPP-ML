@@ -13,7 +13,8 @@
                                              BaseLogisticRegression::alpha,                     \
                                              BaseLogisticRegression::regularizer,               \
                                              BaseLogisticRegression::optimizer,                 \
-                                             BaseLogisticRegression::sigmoid;                   
+                                             BaseLogisticRegression::sigmoid,                   \
+                                             BaseLogisticRegression::logSoftmax;
 
 
 template <class Regularizer, class Optimizer>
@@ -34,6 +35,19 @@ struct LogisticRegressionBase
 
         return 1.0 / (1.0 + exp(-x));
     }
+
+
+    double logSoftmax (const Vec& vx, int k)
+    {
+        return vx(k) - std::log(Eigen::exp(vx.array()).sum());
+    }
+
+    Vec logSoftmax (const Vec& vx)
+    {
+        return vx.array() - std::log(Eigen::exp(vx.array()).sum());
+    }
+
+
 
     
     int M, N;
