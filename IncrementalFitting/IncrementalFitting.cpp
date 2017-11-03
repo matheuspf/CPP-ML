@@ -10,6 +10,8 @@
 
 #include "../Optimization/BFGS/BFGS.h"
 
+#include "../Optimization/Newton/Newton.h"
+
 
 
 int main ()
@@ -33,19 +35,20 @@ int main ()
     X_test = st.transform(X_test);
 
 
-    //using Optimizer = Newton<StrongWolfe, SimplyInvert<Eigen::LLT>>;
-    using Optimizer = BFGS<StrongWolfe, BFGS_Diagonal>;
+    using Optimizer = Newton<StrongWolfe, CholeskyIdentity>;
+    //using Optimizer = BFGS<StrongWolfe, BFGS_Diagonal>;
 
     Optimizer opt(StrongWolfe(1.0, 1e-2));
 
-    opt.maxIter = 10;
-    opt.gTol = 1e-3;
+    opt.maxIterations = 10;
+    //opt.gTol = 1e-3;
 
 
-    // using Optimizer = CG<HS, Backtracking>;
-    // Optimizer opt;
+    // using Optimizer = CG<HS, StrongWolfe>;
 
-    // opt.maxIterations = 10;
+    // Optimizer opt(StrongWolfe(1.0, 1e-2));
+
+    // opt.maxIterations = 100;
     // opt.gTol = 1e-3;
 
 
