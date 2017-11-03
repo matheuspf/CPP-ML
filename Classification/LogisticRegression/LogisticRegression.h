@@ -24,7 +24,7 @@ namespace impl
 {
 
 template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool Polymorphic = false>
-struct LogisticRegression : PickClassifierBase<LogisticRegression<Regularizer, Optimizer, Polymorphic>, Polymorphic>
+struct LogisticRegression : public PickClassifierBase<LogisticRegression<Regularizer, Optimizer, Polymorphic>, Polymorphic>
 {
     USING_CLASSIFIER(PickClassifierBase<LogisticRegression<Regularizer, Optimizer, Polymorphic>, Polymorphic>);
 

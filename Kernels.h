@@ -27,6 +27,7 @@ struct LinearKernel
 };
 
 
+
 struct RBFKernel
 {
 	RBFKernel (double gamma = 0.1) : gamma(gamma) {}
@@ -56,6 +57,33 @@ struct RBFKernel
 
 	double gamma;
 };
+
+
+
+struct AtanKernel
+{
+	AtanKernel(double c = 1.0) : c(c) {}
+
+
+	double operator () (const Vec& x, const Vec& y) const
+	{
+		return ::std::atan(x.dot(y) + c);
+	}
+
+	Vec operator () (const Mat& X, const Vec& y) const
+	{
+		return (X * y).array().unaryExpr([&](double x){ return ::std::atan(x + c); });
+	}
+
+	Mat operator () (const Mat& X, const Mat& Z) const
+	{
+		return (X * Z.transpose()).array().unaryExpr([&](double x){ return ::std::atan(x + c); });
+	}
+
+
+	double c;
+};
+
 
 
 #endif // CPP_ML_KERNELS_H

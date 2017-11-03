@@ -38,9 +38,9 @@ int main ()
     using Optimizer = Newton<StrongWolfe, CholeskyIdentity>;
     //using Optimizer = BFGS<StrongWolfe, BFGS_Diagonal>;
 
-    Optimizer opt(StrongWolfe(1.0, 1e-2));
+    Optimizer opt(StrongWolfe(1.0, 1e-4));
 
-    opt.maxIterations = 10;
+    opt.maxIterations = 20;
     //opt.gTol = 1e-3;
 
 
@@ -51,8 +51,12 @@ int main ()
     // opt.maxIterations = 100;
     // opt.gTol = 1e-3;
 
+    using Kernel = AtanKernel;
 
-    IncrementalFitting<RBFBase, Optimizer> incf(opt);
+    Kernel kernel(1.0);
+
+
+    poly::IncrementalFitting<Kernel, Optimizer> incf(opt, kernel);
 
 
     // double runTime = benchmark([&]

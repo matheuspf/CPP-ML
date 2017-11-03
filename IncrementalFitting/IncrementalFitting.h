@@ -7,8 +7,7 @@
 
 #include "../Optimization/Newton/Newton.h"
 
-#include "../Regularizers.h"
-
+#include "../Kernels.h"
 
 
 double logLikelihood (Vec x, const Veci& y)
@@ -20,32 +19,42 @@ double logLikelihood (Vec x, const Veci& y)
 }
 
 
-struct RBFBase
+
+namespace impl
 {
-};
+
+template <class Function = AtanKernel, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool Polymorphic = false>
+struct IncrementalFitting : public PickClassifierBase<IncrementalFitting<Function, Optimizer, Polymorphic>, Polymorphic>
+{
+    USING_CLASSIFIER(PickClassifierBase<IncrementalFitting<Function, Optimizer, Polymorphic>, Polymorphic>);
 
 
-template <class Function = RBFBase, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
-struct IncrementalFitting : public Classifier<IncrementalFitting<Function, Optimizer>>
-{
     IncrementalFitting (const Function& function = Function(), const Optimizer& optimizer = Optimizer()) :
                         function(function), optimizer(optimizer) {}
 
     IncrementalFitting (const Optimizer& optimizer, const Function& function = Function()) :
                         function(function), optimizer(optimizer) {}
-    
 
-    void fit_ (const Mat& X, const Veci& y, int K = 10, double minGap = 1e-5)
+
+    /// TODO: Allow variadic arguments in the 'fit_' and 'predict_' functions for polymorphic classifiers
+    void fit_ (const Mat& X, const Veci& y)
     {
+        int K = 10; double minGap = 1e-5;   /// FIX ME
+
+
         int M = X.rows(), N = X.cols();
 
         alphas = Mat::Constant(K, N, 0.0);
+
         gammas = Vec::Constant(K, 0.0);
 
         weights = Vec::Constant(K, 0.0);
+
         intercept = 0.0;
 
         Vec predictions = Vec::Constant(M, 0.0);
+
+        double accuracy = 0.0, prevAccuracy = 0.0, prevIntercept;
 
 
         for(int k = 0; k < K; ++k)
@@ -54,48 +63,55 @@ struct IncrementalFitting : public Classifier<IncrementalFitting<Function, Optim
 
             auto func = [&](Vec w) -> double
             {
-                double w0 = w(N), wk = w(N+1), g = w(N+2);
+                double w0 = w(N), wk = w(N+1);
                 
                 w.conservativeResize(N);
 
-                Vec activations = predictions.array() + w0 +
-                                  wk * (X * w).array().unaryExpr([](double x){ return ::std::atan(x); });
-                                  //wk * Eigen::exp(-(X.rowwise() - w.transpose()).rowwise().squaredNorm().array() * g);
-                                  
+                Vec activations = predictions.array() + w0 + wk * function(X, w).array();
+
                 return logLikelihood(activations, y);
             };
 
 
             RandDouble randDouble;
 
-
-            Vec w = Vec::NullaryExpr(N+3, [&](int){ return randDouble(-1.0, 1.0); });
-
-            w(N+2) = pow(10.0, randDouble(-3, 3));
+            Vec w = Vec::NullaryExpr(N+2, [&](int){ return randDouble(-1.0, 1.0); });
 
             w = optimizer(func, w);
 
 
             alphas.row(k) = w.head(N);
 
-            intercept = w(N);
-
             weights(k) = w(N+1);
 
-            gammas(k) = w(N+2);
+            prevIntercept = intercept;
 
+            intercept = w(N);
 
+            
             w.conservativeResize(N);
 
-            predictions = predictions.array() + intercept + weights(k) *
-                          (X * w).array().unaryExpr([](double x){ return ::std::atan(x); });
-                          //Eigen::exp(-(X.rowwise() - w.transpose()).rowwise().squaredNorm().array() * gammas(k));
-            
-            
-            db("Train accuracy:   ", ((predictions.array() > 0.0).cast<int>() == y.array()).cast<double>().sum() / M, "\n");
+            predictions = predictions.array() + intercept + weights(k) * function(X, w).array();
 
-            // db("W:   ", alphas.row(k), "\n\npred:   ", predictions.transpose(), "\n\ngamma:   ", gammas(k), 
-            //    "\n\nweight k:   ", weights(k), "\n\nintercept:   ", intercept, "\n\n\n\n");
+
+            prevAccuracy = accuracy;
+
+            accuracy = ((predictions.array() > 0.0).cast<int>() == y.array()).cast<double>().sum() / M;
+
+            db("Train accuracy:   ", accuracy, "\n");
+            
+
+
+            if(accuracy - prevAccuracy < minGap)
+            {
+                alphas.conservativeResize(k, N);
+                
+                weights.conservativeResize(k);
+
+                intercept = prevIntercept;
+
+                break;
+            }
         }
 
         Veci y_pred = predict_(X);
@@ -104,25 +120,15 @@ struct IncrementalFitting : public Classifier<IncrementalFitting<Function, Optim
     }
 
 
-    int predict_ (Vec x)
-    {
-        x = (alphas * x).array().unaryExpr([](double x){ return ::std::atan(x); });;
-        //x = Eigen::exp(-(alphas.rowwise() - x.transpose()).rowwise().squaredNorm().array() * gammas.array());
 
-        return weights.dot(x) + intercept > 0;
+    int predict_ (const Vec& x)
+    {
+        return weights.dot(function(alphas, x)) + intercept > 0.0;
     }
 
     Veci predict_ (const Mat& X)
     {
-        Veci pred(X.rows());
-
-        for(int i = 0; i < X.rows(); ++i)
-        {
-            Vec x = X.row(i);
-            pred(i) = predict_(x);
-        }
-
-        return pred;
+        return ((ArrayXd(function(X, alphas) * weights).array()) + intercept > 0.0).matrix().cast<int>();
     }
 
 
@@ -141,6 +147,21 @@ struct IncrementalFitting : public Classifier<IncrementalFitting<Function, Optim
     
     Optimizer optimizer;
 };
+
+} // namespace impl
+
+
+
+template <class Function = AtanKernel, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
+using IncrementalFitting = impl::IncrementalFitting<Function, Optimizer, false>;
+
+
+namespace poly
+{
+    template <class Function = AtanKernel, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
+    using IncrementalFitting = impl::IncrementalFitting<Function, Optimizer, true>;
+}
+
 
 
 
