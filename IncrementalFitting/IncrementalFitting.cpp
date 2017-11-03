@@ -40,7 +40,7 @@ int main ()
 
     Optimizer opt(StrongWolfe(1.0, 1e-4));
 
-    opt.maxIterations = 20;
+    opt.maxIterations = 30;
     //opt.gTol = 1e-3;
 
 
@@ -56,7 +56,9 @@ int main ()
     Kernel kernel(1.0);
 
 
-    poly::IncrementalFitting<Kernel, Optimizer> incf(opt, kernel);
+    //IncrementalFitting<Kernel, Optimizer> incf(opt, kernel);
+    poly::Classifier* cls = new poly::IncrementalFitting<Kernel, Optimizer>(opt, kernel);
+    auto& incf = *cls;
 
 
     // double runTime = benchmark([&]

@@ -19,8 +19,16 @@
 
 template <class Impl>
 struct ClassifierBase
-{   
-    void fit (const Mat& X, const Veci& y, int numClasses_ = 0)
+{
+    template <typename... Args>
+    void fit (const Mat& X, const Veci& y, Args&&... args)
+    {
+        fit(X, y, 0, std::forward<Args>(args)...);
+    }
+
+
+    template <typename... Args>
+    void fit (const Mat& X, const Veci& y, int numClasses_, Args&&... args)
     {
         numClasses = numClasses_;
         encodeLabels = numClasses <= 0;
@@ -40,10 +48,10 @@ struct ClassifierBase
                 y_enc = lenc.transform(y);
 
 
-            return static_cast<Impl&>(*this).impl().fit_(X, y_enc);
+            return static_cast<Impl&>(*this).impl().fit_(X, y_enc, std::forward<Args>(args)...);
         }
             
-        return static_cast<Impl&>(*this).impl().fit_(X, y);
+        return static_cast<Impl&>(*this).impl().fit_(X, y, std::forward<Args>(args)...);
     }
 
 

@@ -36,19 +36,31 @@ struct IncrementalFitting : public PickClassifierBase<IncrementalFitting<Functio
                         function(function), optimizer(optimizer) {}
 
 
-    /// TODO: Allow variadic arguments in the 'fit_' and 'predict_' functions for polymorphic classifiers
+
+    void params (int maxBasis_, double minGap_ = 1e-5)
+    {
+        maxBasis = maxBasis_;
+        minGap = minGap_;
+    }
+
+
+    void fit_ (const Mat& X, const Veci& y, int maxBasis_, double minGap_ = 1e-5)
+    {
+        params(maxBasis_, minGap_);
+
+        fit_(X, y);
+    }
+
+
     void fit_ (const Mat& X, const Veci& y)
     {
-        int K = 10; double minGap = 1e-5;   /// FIX ME
-
-
         int M = X.rows(), N = X.cols();
 
-        alphas = Mat::Constant(K, N, 0.0);
+        alphas = Mat::Constant(maxBasis, N, 0.0);
 
-        gammas = Vec::Constant(K, 0.0);
+        gammas = Vec::Constant(maxBasis, 0.0);
 
-        weights = Vec::Constant(K, 0.0);
+        weights = Vec::Constant(maxBasis, 0.0);
 
         intercept = 0.0;
 
@@ -57,7 +69,7 @@ struct IncrementalFitting : public PickClassifierBase<IncrementalFitting<Functio
         double accuracy = 0.0, prevAccuracy = 0.0, prevIntercept;
 
 
-        for(int k = 0; k < K; ++k)
+        for(int k = 0; k < maxBasis; ++k)
         {
             predictions = predictions.array() - intercept;
 
@@ -146,6 +158,11 @@ struct IncrementalFitting : public PickClassifierBase<IncrementalFitting<Functio
     Function function;
     
     Optimizer optimizer;
+
+
+    int maxBasis = 10;
+
+    double minGap = 1e-5;
 };
 
 } // namespace impl
