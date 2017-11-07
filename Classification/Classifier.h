@@ -11,91 +11,128 @@
                                     BaseClassifier::numClasses,     \
                                     BaseClassifier::positiveClass,  \
                                     BaseClassifier::negativeClass,  \
-                                    BaseClassifier::encodeLabels,   \
                                     BaseClassifier::fit,            \
                                     BaseClassifier::predict;
 
 
 
+
+namespace impl
+{
+
 template <class Impl>
 struct ClassifierBase
 {
+    ClassifierBase (int positiveClass = 1, int negativeClass = 0) :
+                    positiveClass(positiveClass), negativeClass(negativeClass), numClasses(0) {}
+
+
+
     template <typename... Args>
     void fit (const Mat& X, const Veci& y, Args&&... args)
     {
-        fit(X, y, 0, std::forward<Args>(args)...);
+        return fit(X, y, true, std::forward<Args>(args)...);
     }
-
 
     template <typename... Args>
-    void fit (const Mat& X, const Veci& y, int numClasses_, Args&&... args)
+    void fit (const Mat& X, const Veci& y, bool addIntercept, Args&&... args)
     {
-        numClasses = numClasses_;
-        encodeLabels = numClasses <= 0;
-
-        if(encodeLabels)
-        {
-            lenc.fit(y);
-
-            numClasses = lenc.numClasses;
-
-            Veci y_enc;
-            
-            if(numClasses == 2)
-                y_enc = lenc.transform(y, positiveClass, negativeClass);
-
-            else
-                y_enc = lenc.transform(y);
-
-
-            return static_cast<Impl&>(*this).impl().fit_(X, y_enc, std::forward<Args>(args)...);
-        }
-            
-        return static_cast<Impl&>(*this).impl().fit_(X, y, std::forward<Args>(args)...);
+        return static_cast<Impl&>(*this).impl().fit_(addIntercept ? addInterceptColumn(X) : X, y, std::forward<Args>(args)...);        
     }
-
 
 
     auto predict (const Vec& x)
     {
-        auto label = static_cast<Impl&>(*this).impl().predict_(x);
-
-        if(encodeLabels)
-            label = lenc.reverseMap[label];
-        
-        return label;
+        return static_cast<Impl&>(*this).impl().predict_(x);
     }
 
     auto predict (const Mat& X)
     {
-        auto labels = static_cast<Impl&>(*this).impl().predict_(X);
-
-        if(encodeLabels)
-        {
-            std::transform(std::begin(labels), std::end(labels), std::begin(labels), [&](const auto& label)
-            {
-                return lenc.reverseMap[label];
-            });
-        }
-
-        return labels;
+        return static_cast<Impl&>(*this).impl().predict_(X);
     }
     
-    
+
+
+
+    Mat addInterceptColumn (Mat X)
+    {
+        X.conservativeResize(Eigen::NoChange, X.cols()+1);
+        X.col(X.cols()-1).array() = 1.0;
+
+        return X;
+    }
+
+
+
+    friend Impl;
+
+
     LabelEncoder<int> lenc;
     
     int numClasses;
 
     int positiveClass;
     int negativeClass;
+};
 
-    bool encodeLabels;
 
 
-//private:
 
-    ClassifierBase (int positiveClass = 1, int negativeClass = 0) :
-                    positiveClass(positiveClass), negativeClass(negativeClass) {}
+
+template <class Impl, bool EncodeLabels>
+struct Classifier : public ClassifierBase<Impl>
+{
+    USING_CLASSIFIER(ClassifierBase<Impl>)
+    using BaseClassifier::BaseClassifier;
+
+
+    template <typename... Args>
+    void fit (const Mat& X, const Veci& y, Args&&... args)
+    {
+        return fit(X, y, true, std::forward<Args>(args)...);
+    }
+
+
+    template <typename... Args>
+    void fit (const Mat& X, const Veci& y, bool addIntercept, Args&&... args)
+    {
+        lenc.fit(y);
+
+        numClasses = lenc.numClasses;
+
+        Veci y_enc;
+        
+        if(numClasses == 2)
+            y_enc = lenc.transform(y, positiveClass, negativeClass);
+
+        else
+            y_enc = lenc.transform(y);
+            
+
+        return BaseClassifier::fit(X, y_enc, addIntercept, std::forward<Args>(args)...);
+    }
+
+
+
+    auto predict (const Vec& x)
+    {
+        auto label = BaseClassifier::predict(x);
+
+        return lenc.reverseMap[label];
+    }
+
+    auto predict (const Mat& X)
+    {
+        auto labels = BaseClassifier::predict(X);
+
+        std::transform(std::begin(labels), std::end(labels), std::begin(labels), [&](const auto& label)
+        {
+            return this->lenc.reverseMap[label];
+        });
+
+        return labels;
+    }
+    
 
     friend Impl;
 };
@@ -103,10 +140,30 @@ struct ClassifierBase
 
 
 
+
 template <class Impl>
-struct Classifier : public ClassifierBase<Classifier<Impl>>
+struct Classifier<Impl, false> : public ClassifierBase<Impl>
 {
-    USING_CLASSIFIER(ClassifierBase<Classifier<Impl>>);
+    USING_CLASSIFIER(ClassifierBase<Impl>)
+    using BaseClassifier::BaseClassifier;
+
+    friend Impl;
+};
+
+} // namespace impl
+
+
+
+
+
+
+
+
+
+template <class Impl, bool EncodeLabels = true>
+struct Classifier : public impl::Classifier<Classifier<Impl, EncodeLabels>, EncodeLabels>
+{
+    USING_CLASSIFIER(impl::Classifier<Classifier<Impl, EncodeLabels>, EncodeLabels>);
     using BaseClassifier::BaseClassifier;
 
 
@@ -146,9 +203,10 @@ private:
 namespace poly
 {
 
-struct Classifier : public ClassifierBase<Classifier>
+template <bool EncodeLabels = true>
+struct Classifier : public ::impl::Classifier<Classifier<EncodeLabels>, EncodeLabels>
 {
-    USING_CLASSIFIER(ClassifierBase<Classifier>);
+    USING_CLASSIFIER(::impl::Classifier<Classifier<EncodeLabels>, EncodeLabels>);
     using BaseClassifier::BaseClassifier;
 
 
@@ -169,8 +227,8 @@ struct Classifier : public ClassifierBase<Classifier>
 
 
 
-template <class T, bool Polymorphic = false>
-using PickClassifierBase = std::conditional_t<Polymorphic, poly::Classifier, Classifier<T>>;
+template <class T, bool EncodeLabels = true, bool Polymorphic = false>
+using PickClassifierBase = std::conditional_t<Polymorphic, poly::Classifier<EncodeLabels>, Classifier<T, EncodeLabels>>;
 
 
 

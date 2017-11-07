@@ -8,12 +8,12 @@
 
 
 
-template <class Cls>
-struct OVA : public std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls>>>
+template <class Cls, bool EncodeLabels = true>
+struct OVA : public std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls, EncodeLabels>, EncodeLabels>>
 {
 public:
 
-    USING_CLASSIFIER(std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls>>>);
+    USING_CLASSIFIER(std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls, EncodeLabels>, EncodeLabels>>);
 
 
     template <typename... Args>

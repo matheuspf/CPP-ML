@@ -9,12 +9,12 @@
 
 
 
-template <class Cls>
-struct OVO : public std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVO<Cls>>>
+template <class Cls, bool EncodeLabels = true>
+struct OVO : public std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVO<Cls, EncodeLabels>, EncodeLabels>>
 {
 public:
 
-    USING_CLASSIFIER(std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVO<Cls>>>);
+    USING_CLASSIFIER(std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVO<Cls, EncodeLabels>, EncodeLabels>>);
 
 
     template <typename... Args>

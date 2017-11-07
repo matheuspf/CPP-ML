@@ -23,10 +23,13 @@
 namespace impl
 {
 
-template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool Polymorphic = false>
-struct LogisticRegression : public PickClassifierBase<LogisticRegression<Regularizer, Optimizer, Polymorphic>, Polymorphic>
+template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>,
+          bool EncodeLabels = true, bool Polymorphic = false>
+struct LogisticRegression : public PickClassifierBase<LogisticRegression<Regularizer, Optimizer,
+                                                      EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>
 {
-    USING_CLASSIFIER(PickClassifierBase<LogisticRegression<Regularizer, Optimizer, Polymorphic>, Polymorphic>);
+    USING_CLASSIFIER(PickClassifierBase<LogisticRegression<Regularizer, Optimizer,
+                     EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
 
 
     LogisticRegression (double alpha, const Optimizer& optimizer = Optimizer(), std::string multiClassType = "OVA") :
@@ -42,34 +45,35 @@ struct LogisticRegression : public PickClassifierBase<LogisticRegression<Regular
     void fit_ (const Mat& X, const Veci& y)
     {
         if(numClasses == 2)
-            impl = std::make_unique<poly::LogisticRegressionTwoClass<Regularizer, Optimizer>>(alpha, optimizer);
+            impl = std::make_unique<poly::LogisticRegressionTwoClass<Regularizer, Optimizer, false>>(alpha, optimizer);
         
         else
         {
             if(multiClassType == "OVA")
-                impl = std::make_unique<OVA<poly::LogisticRegressionTwoClass<Regularizer, Optimizer>>>(alpha, optimizer);
+                impl = std::make_unique<OVA<poly::LogisticRegressionTwoClass<Regularizer, Optimizer, false>, false>>(alpha, optimizer);
 
             else if(multiClassType == "OVO")
-                impl = std::make_unique<OVO<poly::LogisticRegressionTwoClass<Regularizer, Optimizer>>>(alpha, optimizer);
+                impl = std::make_unique<OVO<poly::LogisticRegressionTwoClass<Regularizer, Optimizer, false>, false>>(alpha, optimizer);
 
             else if(multiClassType == "Multi")
-                impl = std::make_unique<poly::LogisticRegressionMultiClass<Regularizer, Optimizer>>(alpha, optimizer);
+                impl = std::make_unique<poly::LogisticRegressionMultiClass<Regularizer, Optimizer, false>>(alpha, optimizer);
         }
         
+        impl->numClasses = numClasses;
 
-        impl->fit(X, y, numClasses);
+        impl->fit_(X, y);
     }
 
 
 
     int predict_ (const Vec& x)
     {
-        return impl->predict(x);
+        return impl->predict_(x);
     }
 
     Veci predict_ (const Mat& X)
     {
-        return impl->predict(X);
+        return impl->predict_(X);
     }
 
 
@@ -97,7 +101,7 @@ struct LogisticRegression : public PickClassifierBase<LogisticRegression<Regular
     
 
     
-    std::unique_ptr<poly::Classifier> impl;
+    std::unique_ptr<poly::Classifier<false>> impl;
 
 
     double alpha;
@@ -113,14 +117,14 @@ struct LogisticRegression : public PickClassifierBase<LogisticRegression<Regular
 
 
 
-template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
-using LogisticRegression = impl::LogisticRegression<Regularizer, Optimizer, false>;
+template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool EncodeLabels = true>
+using LogisticRegression = impl::LogisticRegression<Regularizer, Optimizer, EncodeLabels, false>;
 
 namespace poly
 {
 
-template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
-using LogisticRegression = impl::LogisticRegression<Regularizer, Optimizer, true>;
+template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool EncodeLabels = true>
+using LogisticRegression = impl::LogisticRegression<Regularizer, Optimizer, EncodeLabels, true>;
 
 } // namespace poly
 

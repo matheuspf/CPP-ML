@@ -13,10 +13,10 @@
 namespace impl
 {
 
-template <class Kernel = LinearKernel, bool Polymorphic = false>
-struct RLSC : public PickClassifierBase<RLSC<Kernel, Polymorphic>, Polymorphic>
+template <class Kernel = LinearKernel, bool EncodeLabels = true, bool Polymorphic = false>
+struct RLSC : public PickClassifierBase<RLSC<Kernel, EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>
 {
-    USING_CLASSIFIER(PickClassifierBase<RLSC<Kernel, Polymorphic>, Polymorphic>);
+    USING_CLASSIFIER(PickClassifierBase<RLSC<Kernel, EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
 
 
     RLSC (double alpha = 0.0, const Kernel& kernel = Kernel()) :
@@ -84,15 +84,15 @@ struct RLSC : public PickClassifierBase<RLSC<Kernel, Polymorphic>, Polymorphic>
 } // namespace impl
 
 
-template <class Kernel = LinearKernel>
-using RLSC = impl::RLSC<Kernel, false>;
+template <class Kernel = LinearKernel, bool EncodeLabels = true>
+using RLSC = impl::RLSC<Kernel, EncodeLabels, false>;
 
 
 namespace poly
 {
 
-template <class Kernel = LinearKernel>
-using RLSC = impl::RLSC<Kernel, true>; 
+template <class Kernel = LinearKernel, bool EncodeLabels = true>
+using RLSC = impl::RLSC<Kernel, EncodeLabels, true>; 
 
 }
 

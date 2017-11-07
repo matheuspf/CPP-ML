@@ -12,21 +12,19 @@
 namespace impl
 {
 
-template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool Polymorphic = false>
+template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>,
+          bool EncodeLabels = true, bool Polymorphic = false>
 struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, Optimizer>,
-                                    PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer, Polymorphic>,
-                                                                                                          Polymorphic>
+                                    PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer,
+                                                       EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>
 {
     USING_LOGISTIC_REGRESSION(LogisticRegressionBase<Regularizer, Optimizer>);
-    USING_CLASSIFIER(PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer, Polymorphic>, Polymorphic>);
+    USING_CLASSIFIER(PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer,
+                                        EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
 
 
-    void fit_ (const Mat& X_, const Veci& y)
+    void fit_ (const Mat& X, const Veci& y)
     {
-        Mat X = X_;
-        X.conservativeResize(Eigen::NoChange, X.cols()+1);
-        X.col(X.cols()-1).array() = 1.0;
-
         M = X.rows(), N = X.cols();
 
 
@@ -102,14 +100,14 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
 
 
 
-template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
-using LogisticRegressionTwoClass = impl::LogisticRegressionTwoClass<Regularizer, Optimizer, false>;
+template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool EncodeLabels = true>
+using LogisticRegressionTwoClass = impl::LogisticRegressionTwoClass<Regularizer, Optimizer, EncodeLabels, false>;
 
 
 namespace poly
 {
-    template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>>
-    using LogisticRegressionTwoClass = impl::LogisticRegressionTwoClass<Regularizer, Optimizer, true>;
+    template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool EncodeLabels = true>
+    using LogisticRegressionTwoClass = impl::LogisticRegressionTwoClass<Regularizer, Optimizer, EncodeLabels, true>;
 }
               
 
