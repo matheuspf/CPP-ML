@@ -236,6 +236,8 @@ struct Classifier : public ::impl::Classifier<Classifier<EncodeLabels>, EncodeLa
 
     virtual void fit_ (const Mat&, const Veci&) = 0;
 
+    virtual void fit_ (const Mat&, const Veci&, const Vec&) {}
+
     virtual int predict_ (const Vec&) = 0;
 
     virtual Veci predict_ (const Mat&) = 0;
