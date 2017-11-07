@@ -87,8 +87,6 @@ public:
 
     
 
-    int M, N;
-    
     std::vector<Cls> classifiers;
 
     Cls baseClassifier;

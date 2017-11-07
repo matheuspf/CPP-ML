@@ -8,8 +8,6 @@
 
 #define USING_LOGISTIC_REGRESSION(...) using BaseLogisticRegression = __VA_ARGS__;              \
                                        using BaseLogisticRegression::BaseLogisticRegression,    \
-                                             BaseLogisticRegression::M,                         \
-                                             BaseLogisticRegression::N,                         \
                                              BaseLogisticRegression::alpha,                     \
                                              BaseLogisticRegression::regularizer,               \
                                              BaseLogisticRegression::optimizer,                 \
@@ -48,9 +46,6 @@ struct LogisticRegressionBase
     }
 
 
-
-    
-    int M, N;
     
     double alpha;
 

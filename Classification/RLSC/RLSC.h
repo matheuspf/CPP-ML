@@ -20,10 +20,10 @@ struct RLSC : public PickClassifierBase<RLSC<Kernel, EncodeLabels, Polymorphic>,
 
 
     RLSC (double alpha = 0.0, const Kernel& kernel = Kernel()) :
-          BaseClassifier(1, -1), alpha(alpha), kernel(kernel) {}
+          BaseClassifier(1, -1, false), alpha(alpha), kernel(kernel) {}
 
     RLSC (const Kernel& kernel, double alpha = 0.0) : 
-          BaseClassifier(1, -1), alpha(alpha), kernel(kernel) {}
+          BaseClassifier(1, -1, false), alpha(alpha), kernel(kernel) {}
 
 
 
@@ -69,8 +69,6 @@ struct RLSC : public PickClassifierBase<RLSC<Kernel, EncodeLabels, Polymorphic>,
     }
 
 
-
-    int M, N;
 
     double alpha;
 

@@ -12,7 +12,10 @@
                                     BaseClassifier::positiveClass,  \
                                     BaseClassifier::negativeClass,  \
                                     BaseClassifier::fit,            \
-                                    BaseClassifier::predict;
+                                    BaseClassifier::predict,        \
+                                    BaseClassifier::needsIntercept, \
+                                    BaseClassifier::M,              \
+                                    BaseClassifier::N;
 
 
 
@@ -23,8 +26,12 @@ namespace impl
 template <class Impl>
 struct ClassifierBase
 {
-    ClassifierBase (int positiveClass = 1, int negativeClass = 0) :
-                    positiveClass(positiveClass), negativeClass(negativeClass), numClasses(0) {}
+    ClassifierBase(bool needsIntercept_ = true) : ClassifierBase(1, 0, needsIntercept_) {}
+
+    ClassifierBase(int positiveClass_, int negativeClass_) : ClassifierBase(positiveClass_, negativeClass_, true) {}
+
+    ClassifierBase (int positiveClass_, int negativeClass_, bool needsIntercept_) :
+                    positiveClass(positiveClass_), negativeClass(negativeClass_), needsIntercept(needsIntercept_), numClasses(0) {}
 
 
 
@@ -37,7 +44,13 @@ struct ClassifierBase
     template <typename... Args>
     void fit (const Mat& X, const Veci& y, bool addIntercept, Args&&... args)
     {
-        return static_cast<Impl&>(*this).impl().fit_(addIntercept ? addInterceptColumn(X) : X, y, std::forward<Args>(args)...);        
+        addIntercept = addIntercept & needsIntercept;
+
+        M = X.rows();
+        N = addIntercept ? X.cols() + 1 : X.cols();
+
+        return static_cast<Impl&>(*this).impl().fit_(addIntercept & needsIntercept ? addInterceptColumn(X) : X,
+                                                     y, std::forward<Args>(args)...);        
     }
 
 
@@ -73,6 +86,11 @@ struct ClassifierBase
 
     int positiveClass;
     int negativeClass;
+
+    bool needsIntercept;
+
+    int M;
+    int N;
 };
 
 

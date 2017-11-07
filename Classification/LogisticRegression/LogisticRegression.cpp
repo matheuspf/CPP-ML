@@ -27,7 +27,7 @@ int main ()
     
     Mat X = readMat("../../Data/Wine.txt", ',');
 
-    X = X.block(0, 0, 130, X.cols()-1);
+    //X = X.block(0, 0, 130, X.cols()-1);
 
     Veci y = X.col(0).cast<int>();
 
@@ -64,7 +64,7 @@ int main ()
     // auto cls = std::make_unique<poly::LogisticRegression<L2, Optimizer>>(1e-1, opt, "OVA");
     // poly::Classifier<>& lr = *cls;
 
-    LogisticRegression<L2, Optimizer> lr(1e-1, opt, "OVA");
+    LogisticRegression<L2, Optimizer> lr(1e-1, opt, "OVO");
 
 
 

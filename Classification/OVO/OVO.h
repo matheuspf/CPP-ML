@@ -104,8 +104,6 @@ public:
 
     Cls baseClassifier;    
 
-    int M, N;
-
     MatX<Cls> classifiers;
 };
 
