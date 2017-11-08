@@ -22,8 +22,12 @@ struct Stump : public PickClassifierBase<Stump<EncodeLabels, Polymorphic>, Encod
         fit_(X, y, Vec::Constant(M, 1.0 / M));
     }
 
-    void fit_ (Mat X, const Veci& y, const Vec& prob)
+    void fit_ (const Mat& X_, const Veci& y_, const Vec& prob_)
     {
+        Mat X = X_;
+        Veci y = y_;
+        Vec prob = prob_;
+
         X.transposeInPlace();
 
 
@@ -31,51 +35,58 @@ struct Stump : public PickClassifierBase<Stump<EncodeLabels, Polymorphic>, Encod
 
         std::vector<int> ids(M);
 
+        Vec x;
+
+
+        auto att = std::tie(bestCost, index, stump, direction);
+
 
         for(int i = 0; i < N; ++i)
         {
+            x = X.row(i);
+
             std::iota(ids.begin(), ids.end(), 0);
 
-            std::sort(it::zipIter(&X.row(i)(0), ids.begin()), it::zipIter(&X.row(i)(0) + M, ids.end()));
+            std::sort(it::zipIter(std::begin(x), ids.begin()), it::zipIter(std::end(x), ids.end()));
 
-            for(int dir = 1; dir <= 1; dir += 2)
+
+            double posCost = std::accumulate(ids.begin(), ids.end(), 0.0, [&](double sum, int id)
             {
-                double cost = std::accumulate(ids.begin(), ids.end(), 0.0, [&](double sum, int id)
-                {
-                    return sum + (y(id) == -dir) * prob(id);
-                });
+                return sum + (y(id) == -1) * prob(id);
+            });
 
+            double negCost = 1.0 - posCost;
+            
 
-                if(cost < bestCost)
-                {
-                    bestCost = cost;
-                    index = i;
-                    stump = X(i, 0) - 1e-8;
-                    direction = dir;
-                }
+            if(posCost < bestCost)
+                att = std::make_tuple(posCost, i, x(0) - 1e-8, 1);
 
+            else if(negCost < bestCost)
+                att = std::make_tuple(negCost, i, x(0) - 1e-8, -1);
+            
+
+            for(int j = 0; j < M; ++j)
+            {
+                posCost += (y(ids[j]) == 1 ? 1.0 : -1.0) * prob(ids[j]);
+
+                negCost = 1.0 - posCost;
+
+                if(posCost < bestCost)
+                    att = std::make_tuple(posCost, i, x(j) + 1e-8, 1);
                 
-                for(int j = 0; j < M; ++j)
-                {
-                    cost += (y(ids[j]) == dir ? 1.0 : -1.0) * prob(ids[j]);
-
-                    if(cost < bestCost)
-                    {
-                        bestCost = cost;
-                        index = i;
-                        stump = X(i, j) + 1e-8;
-                        //stump = (j == M-1) ? X(i, j) + 1e-8 : X(i, j+1) - 1e-8;
-                        direction = dir;
-                    }
-                }
+                else if(negCost < bestCost)
+                    att = std::make_tuple(negCost, i, x(j) + 1e-8, -1);
             }
+
         }
+
+        db(bestCost, "\n");
     }
 
 
     int predict_ (const Vec& x)
     {
-        return direction * (x(index) - stump >= 0.0 ? positiveClass : negativeClass);
+        return direction * (x(index) > stump ? positiveClass : negativeClass);
     }
 
 
@@ -84,7 +95,7 @@ struct Stump : public PickClassifierBase<Stump<EncodeLabels, Polymorphic>, Encod
         Veci pred(X.rows());
 
         for(int i = 0; i < X.rows(); ++i)
-            pred(i) = direction * (X(i, index) - stump >= 0.0 ? positiveClass : negativeClass);
+            pred(i) = direction * (X(i, index) > stump ? positiveClass : negativeClass);
 
         return pred;
     }

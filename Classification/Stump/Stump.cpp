@@ -19,6 +19,8 @@ int main ()
 
     auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.5, 1);
 
+    X_train = -X_train;
+
 
 
     Stump<> stump;
@@ -29,12 +31,12 @@ int main ()
         stump.fit(X_train, y_train);
     });
 
-    Veci y_pred = stump.predict(X_train);
+    Veci y_pred = stump.predict(X_test);
 
 
-    db(y_train.transpose(), "\n", y_pred.transpose(), "\n");
+    db(y_test.transpose(), "\n", y_pred.transpose(), "\n");
 
-    db((y_train.array() == y_pred.array()).cast<double>().sum() / y_pred.rows(), "\n");
+    db((y_test.array() == y_pred.array()).cast<double>().sum() / y_pred.rows(), "\n");
 
     db(stump.index, "   ", stump.stump, "   ", stump.direction, "\n");
     
