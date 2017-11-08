@@ -79,8 +79,6 @@ struct Stump : public PickClassifierBase<Stump<EncodeLabels, Polymorphic>, Encod
             }
 
         }
-
-        db(bestCost, "\n");
     }
 
 
