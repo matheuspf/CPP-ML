@@ -4,38 +4,86 @@
 #include "../Modelo.h"
 
 
-Mat readMat (const string& fName, char delimiter = ' ')
+Mat readMat (const std::string& fName, char delimiter = ' ')
 {
-	ifstream file(fName);
+	std::ifstream file(fName);
+
+	std::vector<double> buffer;
+
+	std::vector<std::map<std::string, int>> stringMap;
+	std::vector<int> classCount;
+
+	std::string str;
+
+	int M = 1, N = 0;
 
 
-	int M = 0, N = 0;
+	std::getline(file, str);
 
-	vector<double> buf;
-	
-	string str;
+    std::stringstream ss(str);
+    std::string value;
 
-
-	while(getline(file, str))
+	while(std::getline(ss, value, delimiter))
 	{
-        stringstream ss(str);
-        string value;
+		++N;
+		stringMap.push_back(std::map<std::string, int>{});
+		classCount.push_back(0);
+
+		try
+		{
+			double dVal = std::stod(value);
+			buffer.push_back(dVal);
+		}
+		catch(const std::exception& except)
+		{
+			stringMap[N-1][value] = 0;
+			classCount[N-1] = 1;
+			buffer.push_back(0.0);
+		}
+	}
+
+
+	while(std::getline(file, str))
+	{
+        ss = std::stringstream(str);
+
+		int i = 0;
         
-        int cnt = 0;
+        while(std::getline(ss, value, delimiter))
+		{
+			if(classCount[i] > 0)
+			{
+				auto it = stringMap[i].find(value);
 
-        while(getline(ss, value, delimiter))
-            buf.push_back(stod(value)), cnt++;
+				if(it == stringMap[i].end())
+				{
+					stringMap[i][value] = classCount[i];
+					classCount[i]++;
+				}
 
-		N = N == 0 ? cnt : N;
+				buffer.push_back(stringMap[i][value]);
+			}
+
+			else
+			{
+            	buffer.push_back(std::stod(value));
+			}
+			
+			++i;
+		}
+
         ++M;
 	}
 
 
-	Mat X = Eigen::Map<Mat>(&buf[0], N, M);
+	Mat X = Eigen::Map<Mat>(&buffer[0], N, M);
 
 
 	return X.transpose();
 }
+
+
+
 
 
 
@@ -146,13 +194,21 @@ struct OneHotEncoding
 	OneHotEncoding (vector<int> indices_ = vector<int>()) :
 					indices(indices_), numClasses(indices_.size()), classMap(indices_.size())
 	{
-		sort(indices.begin(), indices.end());
+		std::sort(indices.begin(), indices.end());
 	}
 
 
 	OneHotEncoding& fit (const Mat& X)
 	{
 		int M = X.rows(), N = X.cols();
+
+		if(indices.empty())
+		{
+			indices.resize(N);
+			numClasses.resize(N);
+			classMap.resize(N);
+			std::iota(indices.begin(), indices.end(), 0);
+		}
 
 		for(int i = 0; i < X.rows(); ++i)
 		{
@@ -175,6 +231,7 @@ struct OneHotEncoding
 		int M = X.rows(), N = X.cols(), k = 0;
 
 		Mat Z = Mat::Constant(M, P, 0.0);
+
 
 		for(int j = 0; j < indices.size(); ++j)
 		{
@@ -335,6 +392,27 @@ struct LabelEncoder
 };
 
 
+
+
+
+auto pickTarget (Mat X, int pos = 0)
+{
+	Veci y;
+
+	if(pos == 0)
+	{
+		y = X.col(0).cast<int>();
+    	X = X.block(0, 1, X.rows(), X.cols()-1);
+	}
+
+	else
+	{
+		y = X.col(X.cols()-1).cast<int>();
+		X.conservativeResize(Eigen::NoChange, X.cols()-1);
+	}
+
+	return std::make_tuple(X, y);
+}
 
 
 
