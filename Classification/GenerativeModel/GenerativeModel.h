@@ -13,7 +13,8 @@
 template <class ClassConditional>
 struct GenerativeModel
 {
-    GenerativeModel& fit (const Mat& X, Veci y, bool sharedVariance = false)
+    template <typename T>
+    GenerativeModel& fit (const MatX<T>& X, Veci y, bool sharedVariance = false)
     {
         M = X.rows(), N = X.cols();
 
@@ -26,7 +27,7 @@ struct GenerativeModel
         
         for(int k = 0; k < numClasses; ++k)
         {
-            Mat Xk(classCount[k], N);
+            MatX<T> Xk(classCount[k], N);
 
             for(int i = 0, j = 0; i < M; ++i) if(y(i) == k)
                 Xk.row(j++) = X.row(i);
@@ -39,7 +40,8 @@ struct GenerativeModel
     }
 
 
-    int predict (const Vec& x)
+    template <typename T>
+    int predict (const VecX<T>& x)
     {
         int label = 0;
         double bestPosterior = std::numeric_limits<double>::min();
@@ -60,6 +62,18 @@ struct GenerativeModel
         }//db("\n");
 
         return classReverseMap[label];
+    }
+
+
+    template <typename T>
+    Veci predict (const MatX<T>& X)
+    {
+        Veci res(X.rows());
+
+        for(int i = 0; i < res.rows(); ++i)
+            res(i) = predict(VecX<T>(X.row(i)));
+        
+        return res;
     }
 
 

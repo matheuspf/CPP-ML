@@ -37,6 +37,11 @@ struct Bernoulli
 		return x ? mu : 1.0 - mu;
 	}
 
+	Vec operator () (const Veci& x)
+	{
+		return (x.array() == 0).select(1.0 - mu, Veci::Constant(x.rows(), mu)).cast<double>();
+	}
+
 	int operator () ()
 	{
 		return rng(gen) < mu ? 1 : 0;
