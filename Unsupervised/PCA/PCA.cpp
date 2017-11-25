@@ -77,7 +77,7 @@ int main ()
 
 
 
-    Whitening pca(3);
+    PCA pca(3);
 
     X = pca.fitTransform(X);
 
