@@ -1,17 +1,30 @@
-#ifndef CPP_ML_UNSUPERVISED_FISHERS_LDA
-#define CPP_ML_UNSUPERVISED_FISHERS_LDA
+/** @file
+
+    @brief Fisher's Linear Discrimant Analysis (LDA)
+*/
+
+#ifndef CPP_ML_UNSUPERVISED_LDA
+#define CPP_ML_UNSUPERVISED_LDA
 
 #include "../../Modelo.h"
 #include "../../Preprocessing/Preprocess.h"
 #include "../../SpectraHelpers.h"
 
 
-struct FishersLDAMultiClass
+/** @brief Fisher's Linear Discrimant Analysis (LDA) for supervised dimensionality reduction
+
+    @details The LDA performs a linear projection of the data into a smaller subspace taking into consideration
+             the class labels of each point.
+
+             We want to find a set of directions that maximize the between-class covariance while minizing the
+             whitin-class covariance.
+*/
+struct LDA
 {
-    FishersLDAMultiClass (int D = -1) : D(D) {}
+    LDA (int D = -1) : D(D) {}
 
 
-    FishersLDAMultiClass& fit (const Mat& X, Veci y)
+    LDA& fit (const Mat& X, Veci y)
     {
         y = lenc.fitTransform(y);
         
@@ -34,7 +47,12 @@ struct FishersLDAMultiClass
         }
 
         for(int i = 0; i < K; ++i)
+        {
             mean += means[i];
+            means[i] /= Ns[i];            
+        }
+
+        mean /= M;
 
         for(int i = 0; i < K; ++i)
         {
@@ -42,6 +60,7 @@ struct FishersLDAMultiClass
             Sb += Ns[i] * diff * diff.transpose();
         }
 
+        // No need to calculate every Si -- Sw is the sum of each within scatter
         for(int i = 0; i < M; ++i)
         {
             diff = X.row(i).transpose() - means[y(i)];
@@ -49,7 +68,7 @@ struct FishersLDAMultiClass
         }
 
 
-        TopEigen<> topEigen(inverseMat(Sw) * Sb, D <= 1 ? K-1 : std::min(D, K-1));
+        TopEigen<> topEigen(inverseMat(Sw) * Sb, D < 1 ? K-1 : std::min(D, K-1));
 
         W = topEigen.eigenvectors();
 
@@ -88,4 +107,4 @@ struct FishersLDAMultiClass
 
 
 
-#endif //CPP_ML_UNSUPERVISED_FISHERS_LDA
+#endif //CPP_ML_UNSUPERVISED_LDA

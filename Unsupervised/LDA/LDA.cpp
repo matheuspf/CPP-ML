@@ -1,4 +1,4 @@
-#include "FishersLDA.h"
+#include "LDA.h"
 #include "../../Preprocessing/Preprocess.h"
 
 #include <gnuplot-iostream.h>
@@ -55,7 +55,7 @@ void plotd (const Mat& X, Veci y)
 
 int main ()
 {    
-    auto [X, y] = pickTarget(readMat("../../Data/Wine.txt", ','));
+    auto [X, y] = pickTarget(readMat("../../Data/Iris.txt", ','), 1);
 
     //auto [X, y] = pickTarget(readMat("../../Data/car.txt", ','), 1);
 
@@ -68,18 +68,19 @@ int main ()
 
 
 
-    Standardize stdz;
+    // Standardize stdz;
     
-    X = stdz.fitTransform(X);
+    // X = stdz.fitTransform(X);
 
 
 
-    FishersLDAMultiClass flda(2);
+    LDA lda(2);
 
-    X = flda.fitTransform(X, y);
+    X = lda.fitTransform(X, y);
 
 
     plotd(X, y);
+
 
 
 
