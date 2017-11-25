@@ -1,7 +1,8 @@
-#include "FishersLDA.h"
+#include "PCA.h"
 #include "../../Preprocessing/Preprocess.h"
 
 #include <gnuplot-iostream.h>
+
 
 
 void plotd (const Mat& X, Veci y)
@@ -53,6 +54,8 @@ void plotd (const Mat& X, Veci y)
 
 
 
+
+
 int main ()
 {    
     auto [X, y] = pickTarget(readMat("../../Data/Wine.txt", ','));
@@ -74,9 +77,9 @@ int main ()
 
 
 
-    FishersLDAMultiClass flda(2);
+    Whitening pca(3);
 
-    X = flda.fitTransform(X, y);
+    X = pca.fitTransform(X);
 
 
     plotd(X, y);
