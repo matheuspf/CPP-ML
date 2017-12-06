@@ -42,6 +42,11 @@ struct LogisticRegression : public PickClassifierBase<LogisticRegression<Regular
                         alpha(alpha), optimizer(optimizer), multiClassType(multiClassType) {}
 
 
+    LogisticRegression(const LogisticRegression& lr) : impl(new poly::Classifier<false>(*lr.impl)), 
+                                                       alpha(lr.alpha), regularizer(lr.regularizer), 
+                                                       optimizer(lr.optimizer), multiClassType(lr.multiClassType) {}
+
+
     void fit_ (const Mat& X, const Veci& y)
     {
         if(numClasses == 2)

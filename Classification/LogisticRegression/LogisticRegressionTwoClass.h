@@ -15,8 +15,8 @@ namespace impl
 template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>,
           bool EncodeLabels = true, bool Polymorphic = false>
 struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, Optimizer>,
-                                    PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer,
-                                                       EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>
+                                           PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer,
+                                                              EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>
 {
     USING_LOGISTIC_REGRESSION(LogisticRegressionBase<Regularizer, Optimizer>);
     USING_CLASSIFIER(PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer,
@@ -44,9 +44,11 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
         };
 
 
-        w = Vec::Constant(N, 0.0);
+        // w = Vec::Constant(N, 0.0);
         
-        w = optimizer(func, grad, w);
+        // w = optimizer(func, grad, w);
+
+        optimize(X, y);
 
 
         intercept = w(N-1);
@@ -87,6 +89,37 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
     Vec predictMargin (const Mat& X)
     {
         return (X * w).array() + intercept;
+    }
+
+
+
+    void optimize (const Mat& X, const Veci& y)
+    {
+        w = Vec::Constant(N, 0.0);
+
+        Vec a, s, R;
+
+        for(int i = 0; i < 20; ++i)
+        {
+            a = X * w;
+
+            s = sigmoid(a.array());
+
+            R = s.array() * (1.0 - s.array());
+
+            w = inverseMat(X.transpose() * R.asDiagonal() * X) * X.transpose() * R.asDiagonal() * 
+                (a - inverseMat(R.asDiagonal()) * (s - y.cast<double>()));
+
+
+            std::cout << "a:   " << a.transpose() << "\n\n";
+            std::cout << "s:   " << s.transpose() << "\n\n";
+            std::cout << "R:   " << R.transpose() << "      " << R.norm() << "\n\n";
+            std::cout << "G:   " << (X.transpose() * (s - y.cast<double>())).transpose() << "\n\n";
+            std::cout << "w:   " << w.transpose() << "\n\n\n\n";
+
+            if(R.minCoeff() <= 1e-16)
+                break;
+        }
     }
 
 

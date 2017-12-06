@@ -350,4 +350,11 @@ Vec solveMat (const Mat& X, const Vec& y)
 
 
 
+
+
+
+
+
+
+
 #endif // MODELO_H
