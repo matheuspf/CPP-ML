@@ -395,23 +395,24 @@ struct LabelEncoder
 
 
 
-auto pickTarget (Mat X, int pos = 0)
+auto pickTarget (const Mat& X, int pos = 0)
 {
+	Mat Z;
 	Veci y;
 
 	if(pos == 0)
 	{
 		y = X.col(0).cast<int>();
-    	X = X.block(0, 1, X.rows(), X.cols()-1);
+    	Z = X.block(0, 1, X.rows(), X.cols()-1);
 	}
 
 	else
 	{
 		y = X.col(X.cols()-1).cast<int>();
-		X.conservativeResize(Eigen::NoChange, X.cols()-1);
+		Z = X.block(0, 0, X.rows(), X.cols()-1);
 	}
 
-	return std::make_tuple(X, y);
+	return std::make_tuple(Z, y);
 }
 
 

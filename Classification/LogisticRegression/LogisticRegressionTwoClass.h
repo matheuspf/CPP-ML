@@ -99,27 +99,35 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
 
         Vec a, s, R;
 
-        for(int i = 0; i < 20; ++i)
+        for(int i = 0; i < 50; ++i)
         {
+            std::cout << i << "     ";
+
             a = X * w;
 
             s = sigmoid(a.array());
 
             R = s.array() * (1.0 - s.array());
 
-            w = inverseMat(X.transpose() * R.asDiagonal() * X) * X.transpose() * R.asDiagonal() * 
-                (a - inverseMat(R.asDiagonal()) * (s - y.cast<double>()));
+            w = w - inverseMat(X.transpose() * R.asDiagonal() * X) * X.transpose() * (s - y.cast<double>());
+
+            // w = inverseMat(X.transpose() * R.asDiagonal() * X) * X.transpose() * R.asDiagonal() * 
+            //     (a - inverseMat(R.asDiagonal()) * (s - y.cast<double>()));
 
 
-            std::cout << "a:   " << a.transpose() << "\n\n";
-            std::cout << "s:   " << s.transpose() << "\n\n";
-            std::cout << "R:   " << R.transpose() << "      " << R.norm() << "\n\n";
-            std::cout << "G:   " << (X.transpose() * (s - y.cast<double>())).transpose() << "\n\n";
-            std::cout << "w:   " << w.transpose() << "\n\n\n\n";
+            // std::cout << "a:   " << a.transpose() << "\n\n";
+            // std::cout << "s:   " << s.transpose() << "\n\n";
+            // std::cout << "R:   " << R.transpose() << "      " << R.norm() << "\n\n";
+            // std::cout << "G:   " << (X.transpose() * (s - y.cast<double>())).transpose() << "\n\n";
+            // std::cout << "w:   " << w.transpose() << "\n\n\n\n";
+            
+            db((X.transpose() * (s - y.cast<double>())).norm(), "\n");            
 
-            if(R.minCoeff() <= 1e-16)
+            if((X.transpose() * (s - y.cast<double>())).norm() < 1e-8)
                 break;
         }
+
+        db("\n\n\n");
     }
 
 

@@ -221,6 +221,7 @@ private:
 namespace poly
 {
 
+
 template <bool EncodeLabels = true>
 struct Classifier : public ::impl::Classifier<Classifier<EncodeLabels>, EncodeLabels>
 {
@@ -241,14 +242,32 @@ struct Classifier : public ::impl::Classifier<Classifier<EncodeLabels>, EncodeLa
     virtual int predict_ (const Vec&) = 0;
 
     virtual Veci predict_ (const Mat&) = 0;
+
+
+    virtual Classifier<EncodeLabels>* clone () const = 0;
 };
+
+
+
+template <class Impl, bool EncodeLabels = true>
+struct ClassifierClone : public Classifier<EncodeLabels>
+{
+    using Base = Classifier<EncodeLabels>;
+
+    virtual Base* clone () const
+    {
+        return new Impl(static_cast<const Impl&>(*this));
+    }
+};
+
 
 }
 
 
 
 template <class T, bool EncodeLabels = true, bool Polymorphic = false>
-using PickClassifierBase = std::conditional_t<Polymorphic, poly::Classifier<EncodeLabels>, Classifier<T, EncodeLabels>>;
+using PickClassifierBase = std::conditional_t<Polymorphic, poly::ClassifierClone<T, EncodeLabels>,
+                                                           Classifier<T, EncodeLabels>>;
 
 
 
