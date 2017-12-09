@@ -50,14 +50,14 @@ using VecX = Eigen::Matrix<T, Eigen::Dynamic, 1>;
 template <class T>
 using MatX = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 
-using Vec = VectorXd;
-using Mat = MatrixXd;
+using Vec = VecX<double>;
+using Mat = MatX<double>;
 
-using Veci = VectorXi;
-using Mati = MatrixXi;
+using Veci = VecX<int>;
+using Mati = MatX<int>;
 
-using Vecll = Matrix<long long, Dynamic, 1>;
-using Matll = Matrix<long long, Dynamic, Dynamic>;
+using Vecll = VecX<long long>;
+using Matll = MatX<long long>;
 
 
 ctx double goldenRatio = 1.61803398875;

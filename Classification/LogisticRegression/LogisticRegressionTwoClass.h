@@ -97,37 +97,23 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
     {
         w = Vec::Constant(N, 0.0);
 
-        Vec a, s, R;
+        Vec a, s, R, g;
 
         for(int i = 0; i < 50; ++i)
         {
-            std::cout << i << "     ";
-
             a = X * w;
 
             s = sigmoid(a.array());
 
             R = s.array() * (1.0 - s.array());
 
-            w = w - inverseMat(X.transpose() * R.asDiagonal() * X) * X.transpose() * (s - y.cast<double>());
+            g = X.transpose() * (s - y.cast<double>()) + alpha * w;
 
-            // w = inverseMat(X.transpose() * R.asDiagonal() * X) * X.transpose() * R.asDiagonal() * 
-            //     (a - inverseMat(R.asDiagonal()) * (s - y.cast<double>()));
+            w = w - inverseMat(X.transpose() * R.asDiagonal() * X + alpha * Mat::Identity(N, N)) * g;    
 
-
-            // std::cout << "a:   " << a.transpose() << "\n\n";
-            // std::cout << "s:   " << s.transpose() << "\n\n";
-            // std::cout << "R:   " << R.transpose() << "      " << R.norm() << "\n\n";
-            // std::cout << "G:   " << (X.transpose() * (s - y.cast<double>())).transpose() << "\n\n";
-            // std::cout << "w:   " << w.transpose() << "\n\n\n\n";
-            
-            db((X.transpose() * (s - y.cast<double>())).norm(), "\n");            
-
-            if((X.transpose() * (s - y.cast<double>())).norm() < 1e-8)
+            if(g.norm() < 1e-8)
                 break;
         }
-
-        db("\n\n\n");
     }
 
 

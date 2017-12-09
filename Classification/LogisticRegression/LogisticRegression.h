@@ -73,6 +73,9 @@ struct LogisticRegression : public PickClassifierBase<LogisticRegression<Regular
 
             else if(multiClassType == "Multi")
                 impl = std::make_unique<poly::LogisticRegressionMultiClass<Regularizer, Optimizer, false>>(alpha, optimizer);
+
+            else
+                assert(0 && (string("Multi-class type is invalid:  ") + multiClassType).c_str());
         }
         
         impl->numClasses = numClasses;

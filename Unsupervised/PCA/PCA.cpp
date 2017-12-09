@@ -58,16 +58,18 @@ void plotd (const Mat& X, Veci y)
 
 int main ()
 {    
-    auto [X, y] = pickTarget(readMat("../../Data/Wine.txt", ','));
+    //auto [X, y] = pickTarget(readMat("../../Data/Wine.txt", ','));
+    
+    auto [X, y] = pickTarget(readMat("../../Data/mushroom.txt", ','), 0);
 
     //auto [X, y] = pickTarget(readMat("../../Data/car.txt", ','), 1);
 
     //auto [X, y] = pickTarget(readMat("../../Data/abalone.txt", ','), 1);
 
 
-    // OneHotEncoding ohe({0});
+    OneHotEncoding ohe;
 
-    // X = ohe.fitTransform(X);
+    X = ohe.fitTransform(X);
 
 
 
@@ -77,7 +79,7 @@ int main ()
 
 
 
-    PCA pca(3);
+    PCA pca(2);
 
     X = pca.fitTransform(X);
 

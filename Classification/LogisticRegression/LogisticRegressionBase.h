@@ -12,6 +12,7 @@
                                              BaseLogisticRegression::regularizer,               \
                                              BaseLogisticRegression::optimizer,                 \
                                              BaseLogisticRegression::sigmoid,                   \
+                                             BaseLogisticRegression::softmax,                   \
                                              BaseLogisticRegression::logSoftmax;
 
 
@@ -32,6 +33,41 @@ struct LogisticRegressionBase
         using Eigen::exp;
 
         return 1.0 / (1.0 + exp(-x));
+    }
+
+
+    Vec softmax (Vec x)
+    {
+        double maxVal = x.maxCoeff();
+
+        double sum = std::log(Eigen::exp(x.array() - maxVal).sum()) + maxVal;
+
+        return Eigen::exp(x.array() - sum);
+
+        // x = Eigen::exp(x.array());
+
+        // return x / x.sum();
+    }
+
+
+    Mat softmax (Mat X)
+    {
+        // for(int i = 0; i < X.rows(); ++i)
+        //     X.row(i) = softmax(Vec(X.row(i)));
+
+        // return X;
+
+        Vec maxVal = X.rowwise().maxCoeff();
+
+        Vec logExpSum = Eigen::log(Eigen::exp((X.colwise() - maxVal).array()).rowwise().sum()).matrix().colwise() + maxVal;
+
+        for(int i = 0; i < X.rows(); ++i)
+            if(std::isnan(logExpSum(i)) || std::isinf(logExpSum(i)))
+                logExpSum(i) = maxVal(i);
+
+        X = Eigen::exp((X.colwise() - logExpSum).array());
+        
+        return X;
     }
 
 
