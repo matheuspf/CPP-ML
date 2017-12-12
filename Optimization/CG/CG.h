@@ -58,7 +58,11 @@ BUILD_CG_STRUCT(double fr = FR::operator()(fa, fb);
 template <class CGType = PR_FR, class LineSearch = StrongWolfe>
 struct CG
 {
-	CG(LineSearch lineSearch = StrongWolfe(1e-2, 1e-4, 0.1)) : lineSearch(lineSearch) {}
+	template <typename T = LineSearch, std::enable_if_t<std::is_same<T, StrongWolfe>::value>* = nullptr>
+	CG(const LineSearch& lineSearch = StrongWolfe(1e-2, 1e-4, 0.1)) : lineSearch(lineSearch) {}
+
+	template <typename T = LineSearch, std::enable_if_t<!std::is_same<T, StrongWolfe>::value>* = nullptr>
+	CG(const LineSearch& lineSearch = LineSearch()) : lineSearch(lineSearch) {}
 
 
 	template <class Function, class Gradient>
