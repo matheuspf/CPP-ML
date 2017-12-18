@@ -10,35 +10,28 @@
 
 int main ()
 {
-    // Mat W = readMat("../../Data/Wine.txt", ',');
+    Mat W = readMat("../../Data/Wine.txt", ',');
 
-    // Mat Z = W.block(0, 0, 130, W.cols());
+    Mat Z = W.block(0, 0, 130, W.cols());
 
-    // Veci y = Z.col(0).cast<int>();
+    Veci y = Z.col(0).cast<int>();
 
-    // Mat X = Z.block(0, 1, Z.rows(), Z.cols()-1);
+    Mat X = Z.block(0, 1, Z.rows(), Z.cols()-1);
 
-
-    // X = polyExpansion(X, 2, true);
-
-
-
-    auto [X, y] = pickTarget(readMat("../../Data/mushroom.txt", ','), 0);
-
-    OneHotEncoding ohe;
-
-    X = ohe.fitTransform(X);
-
-    //X = polyExpansion(X, 2, true);
-
-
-    // PCA pca(5);
-
-    // X = pca.fitTransform(X);
+    X = polyExpansion(X, 2, true);
 
 
 
-    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.9, 1);
+    // auto [X, y] = pickTarget(readMat("../../Data/mushroom.txt", ','), 0);
+
+
+    // OneHotEncoding ohe;
+
+    // X = ohe.fitTransform(X);
+
+
+
+    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.5, 1);
 
 
 
@@ -46,7 +39,7 @@ int main ()
 
     double runtime = benchmark([&]
     {
-        blr.fit(X_train, y_train, 1e-6, 1e-6, 50, 1);
+        blr.fit(X_train, y_train, 1e-4, 1e-4, 50);
     });
 
     Veci y_pred_train = blr.predict(X_train);
