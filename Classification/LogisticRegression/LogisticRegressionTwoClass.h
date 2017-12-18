@@ -5,6 +5,10 @@
 
 #include "../Classifier.h"
 
+#include "../../Regularizers.h"
+
+#include "../../Optimization/Newton/Newton.h"
+
 #include "LogisticRegressionBase.h"
 
 
