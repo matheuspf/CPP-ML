@@ -20,13 +20,13 @@ struct BayesianLogisticRegression : PickClassifierBase<BayesianLogisticRegressio
 
     void fit_ (const Mat& X, const Veci& y)
     {
-        fit_(X, y, 1e-4, 1e-4, 20, 10);
+        fit_(X, y, 1e-4, 1e-4, 50);
     }
 
 
-    void fit_ (const Mat& X, const Veci& y, double gTol, double aTol = 1e-4, int outerIter = 20, int innerIter = 10)
+    void fit_ (const Mat& X, const Veci& y, double gTol, double aTol = 1e-4, int maxIter = 50)
     {
-        optimize(X, y, gTol, aTol, outerIter, innerIter);
+        optimize(X, y, gTol, aTol, maxIter);
 
         intercept = w(N-1);
         
@@ -35,70 +35,46 @@ struct BayesianLogisticRegression : PickClassifierBase<BayesianLogisticRegressio
 
 
 
-    void optimize (const Mat& X, const Veci& y, double gTol, double aTol, int outerIter, int innerIter)
+    void optimize (const Mat& X, const Veci& y, double gTol, double aTol, int maxIter)
     {
-        //w = Vec::Constant(N, 0.0);
+        w = Vec::Constant(N, 0.0);
 
-        RandDouble rd(0);
-        w = Vec::NullaryExpr(N, [&](int){ return rd(-1.0, 1.0); });        
-
-        alpha = 1e-7;
+        alpha = 0.0;
 
         double oldAlpha = alpha;
 
         Vec a, s, R, g;
 
         
-        for(int i = 0; i < outerIter; ++i)
+        for(int iter = 0; iter < maxIter; ++iter)
         {
-            for(int j = 0; j < innerIter; ++j)
-            {
-                a = X * w;
+            a = X * w;
 
-                s = sigmoid(a.array());
+            s = sigmoid(a.array());
 
-                R = s.array() * (1.0 - s.array());
+            R = s.array() * (1.0 - s.array());
 
-                g = X.transpose() * (s - y.cast<double>()) + alpha * w;
+            g = X.transpose() * (s - y.cast<double>()) + alpha * w;
 
-                Sn = X.transpose() * R.asDiagonal() * X;
-                Sn.diagonal().array() += alpha;
+            Sn = X.transpose() * R.asDiagonal() * X;
 
-                w = w - inverseMat(Sn) * g;
+            Eigen::EigenSolver<Mat> eigSolver(Sn);
 
+            Sn.diagonal().array() += alpha;
 
-                if(g.norm() < gTol)
-                    break;
-            }
+            w = w - solveMat(Sn, g);
 
 
+            const ArrayXd& eigVals = eigSolver.eigenvalues().real().array();
 
-            // ArrayXd eigVals = Sn.eigenvalues().real();
+            double gamma = (eigVals / (alpha + eigVals)).sum();
 
-            // double gamma = (eigVals / (alpha + eigVals)).sum();
+            oldAlpha = alpha;
 
-            // oldAlpha = alpha;
-
-            // alpha = gamma / w.squaredNorm();
+            alpha = gamma / w.dot(w);
 
             
-            double traceSn = Sn.trace(), ww = w.dot(w);
-            double logll = 0.0;
-
-            for(int i = 0; i < M; ++i)
-                logll += (y(i) == 1 ? std::log(s(i)) : std::log(1.0 - s(i)));
-
-            auto alphaFunc = [&](double a)
-            {
-                return -logll + 0.5 * (a * ww + traceSn - N * std::log(a));
-            };
-
-            Brents brents;
-
-            alpha = brents(alphaFunc, 0.0, 1e3);
-            
-
-            if(std::abs(alpha - oldAlpha) < aTol)
+            if(g.norm() < gTol && std::abs(alpha - oldAlpha) < aTol)
                 break;
         }
     }
