@@ -3,7 +3,7 @@
 
 #include "../Classifier.h"
 
-#include "../../Optimization/LineSearch/Brents/Brents.h"
+#include "../LogisticRegression/LogisticRegression.h"
 
 
 
@@ -11,11 +11,15 @@ namespace impl
 {
 
 template <bool EncodeLabels = true, bool Polymorphic = false>
-struct BayesianLogisticRegression : PickClassifierBase<BayesianLogisticRegression<EncodeLabels, Polymorphic>,
-                                                        EncodeLabels, Polymorphic>
+struct BayesianLogisticRegression : public PickClassifierBase<BayesianLogisticRegression<EncodeLabels, Polymorphic>, 
+                                                              EncodeLabels, Polymorphic>,
+                                           LogisticRegressionTwoClass<L2, Newton<>, EncodeLabels, Polymorphic>
 {
-    USING_CLASSIFIER(PickClassifierBase<BayesianLogisticRegression<EncodeLabels, Polymorphic>,
-                                                        EncodeLabels, Polymorphic>);
+    USING_CLASSIFIER(PickClassifierBase<BayesianLogisticRegression<EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
+    USING_LOGISTIC_REGRESSION(LogisticRegressionTwoClass<L2, Newton<>, EncodeLabels, Polymorphic>);
+
+    using BaseLogisticRegression::w, BaseLogisticRegression::intercept, BaseLogisticRegression::predict_, 
+          BaseLogisticRegression::predictMargin, BaseLogisticRegression::optimizeFunc;
 
 
     void fit_ (const Mat& X, const Veci& y)
@@ -43,27 +47,21 @@ struct BayesianLogisticRegression : PickClassifierBase<BayesianLogisticRegressio
 
         double oldAlpha = alpha;
 
-        Vec a, s, R, g;
+        Vec g;        
+
+        auto func = optimizeFunc(X, y);
 
         
         for(int iter = 0; iter < maxIter; ++iter)
         {
-            a = X * w;
-
-            s = sigmoid(a.array());
-
-            R = s.array() * (1.0 - s.array());
-
-            g = X.transpose() * (s - y.cast<double>()) + alpha * w;
-
-            Sn = X.transpose() * R.asDiagonal() * X;
-
-            Eigen::EigenSolver<Mat> eigSolver(Sn);
-
-            Sn.diagonal().array() += alpha;
+            std::tie(g, Sn) = func(w);
 
             w = w - solveMat(Sn, g);
+            
 
+            Sn.diagonal().array() -= alpha;
+
+            Eigen::EigenSolver<Mat> eigSolver(Sn);
 
             const ArrayXd& eigVals = eigSolver.eigenvalues().real().array();
 
@@ -82,18 +80,6 @@ struct BayesianLogisticRegression : PickClassifierBase<BayesianLogisticRegressio
 
 
 
-
-    int predict_ (const Vec& x)
-    {
-        return predictMargin(x) > 0.0;
-    }
-
-    Veci predict_ (const Mat& X)
-    {
-        return (ArrayXd(predictMargin(X)) > 0.0).cast<int>();
-    }
-
-
     double predictProb (const Vec& x)
     {
         return sigmoid(kappa(x.dot(Sn * x)) * predictMargin(x));
@@ -105,26 +91,6 @@ struct BayesianLogisticRegression : PickClassifierBase<BayesianLogisticRegressio
     }
 
 
-    double predictMargin (const Vec& x)
-    {
-        return w.dot(x) + intercept;
-    }
-
-    Vec predictMargin (const Mat& X)
-    {
-        return (X * w).array() + intercept;
-    }
-
-
-
-
-    template <class T>
-    static auto sigmoid (const T& x)
-    {
-        return 1.0 / (1.0 + exp(-x));
-    }
-
-
     template <typename T>
     auto kappa (const T& sigma)
     {
@@ -132,13 +98,6 @@ struct BayesianLogisticRegression : PickClassifierBase<BayesianLogisticRegressio
     }
 
 
-
-
-    Vec w;
-
-    double intercept;
-
-    double alpha;
 
     Mat Sn;
 

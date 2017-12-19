@@ -10,28 +10,28 @@
 
 int main ()
 {
-    Mat W = readMat("../../Data/Wine.txt", ',');
+    // Mat W = readMat("../../Data/Wine.txt", ',');
 
-    Mat Z = W.block(0, 0, 130, W.cols());
+    // Mat Z = W.block(0, 0, 130, W.cols());
 
-    Veci y = Z.col(0).cast<int>();
+    // Veci y = Z.col(0).cast<int>();
 
-    Mat X = Z.block(0, 1, Z.rows(), Z.cols()-1);
+    // Mat X = Z.block(0, 1, Z.rows(), Z.cols()-1);
 
     // X = polyExpansion(X, 2, true);
 
 
 
-    // auto [X, y] = pickTarget(readMat("../../Data/mushroom.txt", ','), 0);
+    auto [X, y] = pickTarget(readMat("../../Data/mushroom.txt", ','), 0);
 
 
-    // OneHotEncoding ohe;
+    OneHotEncoding ohe;
 
-    // X = ohe.fitTransform(X);
+    X = ohe.fitTransform(X);
 
 
 
-    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.5, 1);
+    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.995, 1);
 
 
 

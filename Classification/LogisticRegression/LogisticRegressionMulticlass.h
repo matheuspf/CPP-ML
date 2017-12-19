@@ -25,54 +25,18 @@ struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer,
                                         EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
 
 
+
+    
     void fit_ (const Mat& X, const Veci& y)
+    {
+        fit_(X, y, 1e-6, 50);
+    }
+
+    void fit_ (const Mat& X, const Veci& y, double gTol, int maxIter = 50)
     {
         M = X.rows(), N = X.cols();
 
-
-        // auto func = [&](const Vec& w) -> double
-        // {
-        //     Mat W = Mat::Map(&w(0), numClasses, N);
-
-        //     double res = 0;
-
-        //     for(int i = 0; i < M; ++i)
-        //         res += logSoftmax(W * X.row(i).transpose(), y(i));
-
-        //     //db(-res, "     ", 0.5 * alpha * regularizer(w), "\n");
-
-        //     return -res + 0.5 * alpha * regularizer(w);
-        // };
-
-        // auto grad = [&](const Vec& w) -> Vec
-        // {
-        //     Mat W = Mat::Map(&w(0), numClasses, N);
-            
-        //     Mat grad = Mat::Constant(numClasses, N, 0.0);
-
-        //     for(int i = 0; i < M; ++i)
-        //     {
-        //         Vec sm = logSoftmax(W * X.row(i).transpose());
-
-        //         sm(y(i)) -= 1.0;
-
-        //         grad += sm * X.row(i);
-        //     }
-            
-        //     return Vec::Map(&grad(0), numClasses * N) + 0.5 * alpha * regularizer.gradient(w);
-        // };
-
-
-
-        // Vec w0 = Vec::NullaryExpr(numClasses * N, [&](int){ return randDouble(-0.1, 0.1); });
-        // //Vec w0 = Vec::Constant(numClasses * N, 0.0);
-
-        // w0 = optimizer(func, grad, w0);
-        
-
-        // W = Mat::Map(&w0(0), numClasses, N);
-
-        optimize(X, y);
+        optimize(X, y, gTol, maxIter);
 
         intercept = W.row(W.rows()-1);
 
@@ -83,65 +47,92 @@ struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer,
 
     int predict_ (const Vec& x)
     {
-        Vec vals = W.transpose() * x + intercept;
-
-        double b = -1e20;
-        int p = 0;
-
-        for(int i = 0; i < numClasses; ++i)
-            if(vals(i) > b)
-                b = vals(i), p = i;
-
-        return p;
+        Vec vals = predictMargin(x);
+        
+        return std::max_element(std::begin(vals), std::end(vals)) - std::begin(vals);
     }
 
     Veci predict_ (const Mat& X)
     {
-        Veci vals(X.rows());
+        Mat vals = predictMargin(X);
+        vals.transposeInPlace();
 
-        for(int i = 0; i < X.rows(); ++i)
-            vals(i) = predict_(Vec(X.row(i)));
-
-        return vals;
+        return Veci::NullaryExpr(X.rows(), [&](int i)
+        {
+            return std::max_element(&vals.col(i)(0), &vals.col(i)(0) + numClasses) - &vals.col(i)(0);
+        });
     }
 
 
-    void optimize (const Mat& X, const Veci& y)
+
+    void optimize (const Mat& X, const Veci& y, double gTol, int maxIter)
     {
-        int K = numClasses;
-
-
-        Eigen::SparseMatrix<double> T(M, K);
-
-        std::vector<Eigen::Triplet<double>> vecTrip(M);
-
-        int cnt = 0;
-
-        std::generate(vecTrip.begin(), vecTrip.end(), [&]{ return Triplet<double>(cnt++, y(cnt), 1.0); });
-
-        T.setFromTriplets(vecTrip.begin(), vecTrip.end());
-
-
-        W = Mat::Constant(N, K, 0.0);
+        W = Mat::Constant(N, numClasses, 0.0);
 
         Map<Vec> w(W.data(), W.size());
 
+        OptimizeFunc<decltype(*this)> func(*this, X, y);
 
-        Vec R = Vec::Constant(N, 0.0);
 
-        Mat H = Mat::Constant(N*K, N*K, 0.0);
+        for(int iter = 0; iter < maxIter; ++iter)
+        {
+            const auto& [G, H] = func(W);
 
-        Mat A, S, G;
+            Map<Vec> g(G.data(), G.size());
 
-        for(int i = 0; i < 50; ++i)
+            w = w - solveMat(H, g);
+
+            if(g.norm() < gTol)
+                break;
+        }
+    }
+
+
+
+    Vec predictProb (const Vec& x)
+    {
+        return softmax(predictMargin(x));
+    }
+
+    Mat predictProb (const Mat& X)
+    {
+        return softmax(predictMargin(X));        
+    }
+
+
+    Vec predictMargin (const Vec& x)
+    {
+        return W.transpose() * x + intercept;
+    }
+
+    Mat predictMargin (const Mat& X)
+    {
+        return (X * W).rowwise() + intercept.transpose();
+    }
+
+
+    template <class Base>
+    struct OptimizeFunc
+    {
+        OptimizeFunc (const Base& base, const Mat& X, const Veci& y) : 
+                      base(base), N(base.N), M(base.M), K(base.numClasses), alpha(base.alpha), X(X), y(y), 
+                      R(Vec::Constant(N, 0.0)), H(Mat::Constant(N*K, N*K, 0.0)), T(M, K), vecTrip(M)
+        {
+            int cnt = 0;
+
+            std::generate(vecTrip.begin(), vecTrip.end(), [&]{ return Triplet<double>(cnt++, y(cnt), 1.0); });
+
+            T.setFromTriplets(vecTrip.begin(), vecTrip.end());
+        }
+
+
+        inline auto operator () (const Mat& W)
         {
             A = X * W;
 
-            S = softmax(A);
+            S = base.softmax(A);
 
             G = X.transpose() * (S - T) + alpha * W;
-
-            Map<Vec> g(G.data(), G.size());
 
             for(int i = 0; i < K; ++i)
             {
@@ -154,55 +145,34 @@ struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer,
             }
 
             H.diagonal().array() += alpha;
-            //H = H + alpha * Mat::Identity(N*K, N*K);
 
-            w = w - solveMat(H, g);
-
-            if(g.norm() < 1e-8)
-                break;
+            return std::tie(G, H);
         }
-    }
 
 
-    Vec vec (const Mat& X)
-    {
-        Vec x(X.rows() * X.cols());
+        const Base& base;
 
-        for(int i = 0, k = 0; i < X.rows(); ++i)
-            for(int j = 0; j < X.cols(); ++j, ++k)
-                x(k) = X(i, j);
+        const int &N, &M, &K;
 
-        return x;
-    }
-
-    Mat mat (const Vec& x, int r, int c)
-    {
-        Mat X(r, c);
-
-        for(int i = 0, k = 0; i < r; ++i)
-            for(int j = 0; j < c; ++j, ++k)
-                X(i, j) = x(k);
-
-        return X;
-    }
+        const double& alpha;        
 
 
-    // double predictProb (const Vec& x)
-    // {
-    // }
+        const Mat& X;
 
-    // Vec predictProb (const Mat& X)
-    // {
-    // }
+        const Veci& y;
 
 
-    // double predictMargin (const Vec& x)
-    // {
-    // }
+        Vec R;
 
-    // Vec predictMargin (const Mat& X)
-    // {
-    // }
+        Mat A, S, G, H;
+
+        Eigen::SparseMatrix<double> T;
+
+        std::vector<Eigen::Triplet<double>> vecTrip;
+    };
+
+
+
 
 
 

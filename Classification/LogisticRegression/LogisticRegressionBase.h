@@ -43,20 +43,11 @@ struct LogisticRegressionBase
         double sum = std::log(Eigen::exp(x.array() - maxVal).sum()) + maxVal;
 
         return Eigen::exp(x.array() - sum);
-
-        // x = Eigen::exp(x.array());
-
-        // return x / x.sum();
     }
 
 
     Mat softmax (Mat X)
     {
-        // for(int i = 0; i < X.rows(); ++i)
-        //     X.row(i) = softmax(Vec(X.row(i)));
-
-        // return X;
-
         Vec maxVal = X.rowwise().maxCoeff();
 
         Vec logExpSum = Eigen::log(Eigen::exp((X.colwise() - maxVal).array()).rowwise().sum()).matrix().colwise() + maxVal;

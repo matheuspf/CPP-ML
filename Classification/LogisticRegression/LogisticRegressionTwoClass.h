@@ -27,6 +27,7 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
                                         EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
 
 
+        
     void fit_ (const Mat& X, const Veci& y)
     {
         M = X.rows(), N = X.cols();
@@ -52,7 +53,7 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
         
         // w = optimizer(func, grad, w);
 
-        optimize(X, y);
+        optimize(X, y, 1e-8);
 
 
         intercept = w(N-1);
@@ -97,13 +98,14 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
 
 
 
-    void optimize (const Mat& X, const Veci& y)
+    auto optimizeFunc (const Mat& X, const Veci& y)
     {
-        w = Vec::Constant(N, 0.0);
+        static Vec a, s, R, g;
 
-        Vec a, s, R, g;
+        static Mat H;
+        
 
-        for(int i = 0; i < 50; ++i)
+        return [&](const Vec& w)
         {
             a = X * w;
 
@@ -113,9 +115,35 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
 
             g = X.transpose() * (s - y.cast<double>()) + alpha * w;
 
-            w = w - inverseMat(X.transpose() * R.asDiagonal() * X + alpha * Mat::Identity(N, N)) * g;    
+            H = X.transpose() * R.asDiagonal() * X;
 
-            if(g.norm() < 1e-8)
+            H.diagonal().array() += alpha;
+
+
+            return std::tie(g, H);
+        };
+    }
+
+
+
+    void optimize (const Mat& X, const Veci& y, double gTol)
+    {
+        w = Vec::Constant(N, 0.0);
+
+        auto func = optimizeFunc(X, y);
+
+        Vec g;
+
+        Mat H;
+
+
+        for(int i = 0; i < 50; ++i)
+        {
+            std::tie(g, H) = func(w);
+
+            w = w - solveMat(H, g);
+
+            if(g.norm() < gTol)
                 break;
         }
     }
