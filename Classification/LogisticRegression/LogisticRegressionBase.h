@@ -36,7 +36,7 @@ struct LogisticRegressionBase
     }
 
 
-    Vec softmax (Vec x)
+    static Vec softmax (Vec x)
     {
         double maxVal = x.maxCoeff();
 
@@ -46,7 +46,7 @@ struct LogisticRegressionBase
     }
 
 
-    Mat softmax (Mat X)
+    static Mat softmax (Mat X)
     {
         Vec maxVal = X.rowwise().maxCoeff();
 
@@ -62,12 +62,12 @@ struct LogisticRegressionBase
     }
 
 
-    double logSoftmax (const Vec& vx, int k)
+    static double logSoftmax (const Vec& vx, int k)
     {
         return vx(k) - std::log(Eigen::exp(vx.array()).sum());
     }
 
-    Vec logSoftmax (const Vec& vx)
+    static Vec logSoftmax (const Vec& vx)
     {
         return vx.array() - std::log(Eigen::exp(vx.array()).sum());
     }

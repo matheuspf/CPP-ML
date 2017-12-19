@@ -15,7 +15,7 @@
 
 #include "LogisticRegressionTwoClass.h"
 
-#include "LogisticRegressionMulticlass.h"
+#include "LogisticRegressionMultiClass.h"
 
 #include "../Classifier.h"
 

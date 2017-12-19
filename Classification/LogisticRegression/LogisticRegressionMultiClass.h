@@ -71,7 +71,7 @@ struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer,
 
         Map<Vec> w(W.data(), W.size());
 
-        OptimizeFunc<decltype(*this)> func(*this, X, y);
+        OptimizeFunc func(N, M, numClasses, alpha, X, y);
 
 
         for(int iter = 0; iter < maxIter; ++iter)
@@ -111,12 +111,12 @@ struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer,
     }
 
 
-    template <class Base>
+
     struct OptimizeFunc
     {
-        OptimizeFunc (const Base& base, const Mat& X, const Veci& y) : 
-                      base(base), N(base.N), M(base.M), K(base.numClasses), alpha(base.alpha), X(X), y(y), 
-                      R(Vec::Constant(N, 0.0)), H(Mat::Constant(N*K, N*K, 0.0)), T(M, K), vecTrip(M)
+        OptimizeFunc (int N, int M, int K, const double& alpha, const Mat& X, const Veci& y) : 
+                      N(N), M(M), K(K), alpha(alpha), X(X), y(y), R(Vec::Constant(N, 0.0)), 
+                      H(Mat::Constant(N*K, N*K, 0.0)), T(M, K), vecTrip(M)
         {
             int cnt = 0;
 
@@ -130,7 +130,7 @@ struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer,
         {
             A = X * W;
 
-            S = base.softmax(A);
+            S = softmax(A);
 
             G = X.transpose() * (S - T) + alpha * W;
 
@@ -150,9 +150,8 @@ struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer,
         }
 
 
-        const Base& base;
 
-        const int &N, &M, &K;
+        int N, M, K;
 
         const double& alpha;        
 

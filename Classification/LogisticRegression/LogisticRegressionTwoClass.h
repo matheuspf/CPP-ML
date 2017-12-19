@@ -19,7 +19,7 @@ namespace impl
 template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>,
           bool EncodeLabels = true, bool Polymorphic = false>
 struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, Optimizer>,
-                                           PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer,
+                                    virtual public PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer,
                                                               EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>
 {
     USING_LOGISTIC_REGRESSION(LogisticRegressionBase<Regularizer, Optimizer>);
