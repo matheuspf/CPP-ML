@@ -6,24 +6,26 @@
 #include "../Preprocessing/Preprocess.h"
 
 
-#define USING_CLASSIFIER(...) using BaseClassifier = __VA_ARGS__;   \
-                              using BaseClassifier::lenc,           \
-                                    BaseClassifier::numClasses,     \
-                                    BaseClassifier::positiveClass,  \
-                                    BaseClassifier::negativeClass,  \
-                                    BaseClassifier::fit,            \
-                                    BaseClassifier::predict,        \
-                                    BaseClassifier::needsIntercept, \
-                                    BaseClassifier::M,              \
-                                    BaseClassifier::N;
 
+#define USING_CLASSIFIER_BASE(...) using BaseClassifier = __VA_ARGS__;   \
+                                    using BaseClassifier::lenc,           \
+                                            BaseClassifier::numClasses,     \
+                                            BaseClassifier::positiveClass,  \
+                                            BaseClassifier::negativeClass,  \
+                                            BaseClassifier::needsIntercept, \
+                                            BaseClassifier::addInterceptColumn, \
+                                            BaseClassifier::M,              \
+                                            BaseClassifier::N;
+
+#define USING_CLASSIFIER(...) USING_CLASSIFIER_BASE(__VA_ARGS__);   \
+                              using BaseClassifier::fit,            \
+                                    BaseClassifier::predict;
 
 
 
 namespace impl
 {
 
-template <class Impl>
 struct ClassifierBase
 {
     ClassifierBase(bool needsIntercept_ = true) : ClassifierBase(1, 0, needsIntercept_) {}
@@ -35,38 +37,6 @@ struct ClassifierBase
 
 
 
-    template <typename... Args>
-    void fit (const Mat& X, const Veci& y, Args&&... args)
-    {
-        return fit(X, y, true, std::forward<Args>(args)...);
-    }
-
-    template <typename... Args>
-    void fit (const Mat& X, const Veci& y, bool addIntercept, Args&&... args)
-    {
-        addIntercept = addIntercept & needsIntercept;
-
-        M = X.rows();
-        N = addIntercept ? X.cols() + 1 : X.cols();
-
-        return static_cast<Impl&>(*this).impl().fit_(addIntercept & needsIntercept ? addInterceptColumn(X) : X,
-                                                     y, std::forward<Args>(args)...);        
-    }
-
-
-    auto predict (const Vec& x)
-    {
-        return static_cast<Impl&>(*this).impl().predict_(x);
-    }
-
-    auto predict (const Mat& X)
-    {
-        return static_cast<Impl&>(*this).impl().predict_(X);
-    }
-    
-
-
-
     Mat addInterceptColumn (Mat X)
     {
         X.conservativeResize(Eigen::NoChange, X.cols()+1);
@@ -75,9 +45,6 @@ struct ClassifierBase
         return X;
     }
 
-
-
-    friend Impl;
 
 
     LabelEncoder<int> lenc;
@@ -95,24 +62,79 @@ struct ClassifierBase
 
 
 
+template <class Impl>
+struct ClassifierImpl : public Impl
+{
+    USING_CLASSIFIER_BASE(Impl);
+    using Impl::Impl;
+
+
+    void fit (const Mat& X, const Veci& y, bool addIntercept = true)
+    {
+        fitImpl(X, y, addIntercept);
+    }
+
+    template <typename... Args, std::enable_if_t<(sizeof...(Args) > 0)>* = nullptr>
+    void fit (const Mat& X, const Veci& y, Args&&... args)
+    {
+        fitImpl(X, y, true, std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    void fitImpl (const Mat& X, const Veci& y, bool addIntercept, Args&&... args)
+    {
+        addIntercept = addIntercept & needsIntercept;
+
+        M = X.rows();
+        N = addIntercept ? X.cols() + 1 : X.cols();
+
+        return Impl::fit(addIntercept & needsIntercept ? addInterceptColumn(X) : X,
+                           y, std::forward<Args>(args)...);        
+    }
+
+
+    int predict (const Vec& x)
+    {
+        return Impl::predict(x);
+    }
+
+    Veci predict (const Mat& X)
+    {
+        return Impl::predict(X);
+    }
+
+
+    ClassifierImpl* clone () const
+    {
+        return new ClassifierImpl(*this);
+    }
+};
+
+
+
 
 
 template <class Impl, bool EncodeLabels>
-struct Classifier : public ClassifierBase<Impl>
+struct Classifier : public ClassifierImpl<Impl>
 {
-    USING_CLASSIFIER(ClassifierBase<Impl>)
-    using BaseClassifier::BaseClassifier;
+    USING_CLASSIFIER_BASE(ClassifierImpl<Impl>);
+    using ClassifierImpl<Impl>::ClassifierImpl;
 
 
-    template <typename... Args>
+    void fit (const Mat& X, const Veci& y, bool addIntercept = true)
+    {
+        fitImpl(X, y, addIntercept);
+    }
+
+    template <typename... Args, std::enable_if_t<(sizeof...(Args) > 0)>* = nullptr>
     void fit (const Mat& X, const Veci& y, Args&&... args)
     {
-        return fit(X, y, true, std::forward<Args>(args)...);
+        fitImpl(X, y, true, std::forward<Args>(args)...);
     }
 
 
     template <typename... Args>
-    void fit (const Mat& X, const Veci& y, bool addIntercept, Args&&... args)
+    void fitImpl (const Mat& X, const Veci& y, bool addIntercept, Args&&... args)
     {
         lenc.fit(y);
 
@@ -127,21 +149,21 @@ struct Classifier : public ClassifierBase<Impl>
             y_enc = lenc.transform(y);
             
 
-        return BaseClassifier::fit(X, y_enc, addIntercept, std::forward<Args>(args)...);
+        return ClassifierImpl<Impl>::fit(X, y_enc, addIntercept, std::forward<Args>(args)...);
     }
 
 
 
-    auto predict (const Vec& x)
+    int predict (const Vec& x)
     {
-        auto label = BaseClassifier::predict(x);
+        auto label = ClassifierImpl<Impl>::predict(x);
 
         return lenc.reverseMap[label];
     }
 
-    auto predict (const Mat& X)
+    Veci predict (const Mat& X)
     {
-        auto labels = BaseClassifier::predict(X);
+        auto labels = ClassifierImpl<Impl>::predict(X);
 
         std::transform(std::begin(labels), std::end(labels), std::begin(labels), [&](const auto& label)
         {
@@ -160,12 +182,10 @@ struct Classifier : public ClassifierBase<Impl>
 
 
 template <class Impl>
-struct Classifier<Impl, false> : public ClassifierBase<Impl>
+struct Classifier<Impl, false> : public ClassifierImpl<Impl>
 {
-    USING_CLASSIFIER(ClassifierBase<Impl>)
-    using BaseClassifier::BaseClassifier;
-
-    friend Impl;
+    USING_CLASSIFIER_BASE(ClassifierImpl<Impl>);
+    using ClassifierImpl<Impl>::ClassifierImpl;
 };
 
 } // namespace impl
@@ -177,42 +197,30 @@ struct Classifier<Impl, false> : public ClassifierBase<Impl>
 
 
 
-
-template <class Impl, bool EncodeLabels = true>
-struct Classifier : public impl::Classifier<Classifier<Impl, EncodeLabels>, EncodeLabels>
+struct Classifier : public impl::ClassifierBase
 {
-    USING_CLASSIFIER(impl::Classifier<Classifier<Impl, EncodeLabels>, EncodeLabels>);
-    using BaseClassifier::BaseClassifier;
+    USING_CLASSIFIER_BASE(impl::ClassifierBase);
+    using impl::ClassifierBase::ClassifierBase;
 
-
-    decltype(auto) impl ()
-    {
-        return static_cast<Impl&>(*this);
-    }
 
     
     template <bool T = false>
-    void fit_ (const Mat&, const Veci&)
+    void fit (const Mat&, const Veci&, bool = true)
     {
-        static_assert(T, "fit_ method not defined");
+        static_assert(T, "fit method not defined");
     }
 
     template <bool T = false>
-    int predict_ (const Vec&)
+    int predict (const Vec&)
     {
-        static_assert(T, "predict_ (batch observation) method not defined");
+        static_assert(T, "predict method not defined");
     }
 
     template <bool T = false>
-    Veci predict_ (const Mat&)
+    Veci predict (const Mat&)
     {
-        static_assert(T, "predict_ (batch observation) method not defined");
+        static_assert(T, "predict (batch) method not defined");
     }
-
-
-private:
-
-    friend Impl;
 };
 
 
@@ -222,52 +230,42 @@ namespace poly
 {
 
 
-template <bool EncodeLabels = true>
-struct Classifier : public ::impl::Classifier<Classifier<EncodeLabels>, EncodeLabels>
+struct Classifier : public impl::ClassifierBase
 {
-    USING_CLASSIFIER(::impl::Classifier<Classifier<EncodeLabels>, EncodeLabels>);
-    using BaseClassifier::BaseClassifier;
+    USING_CLASSIFIER_BASE(impl::ClassifierBase);
+    using impl::ClassifierBase::ClassifierBase;
 
 
-    decltype(auto) impl ()
-    {
-        return *this;
-    }
+    virtual void fit (const Mat&, const Veci&, bool = true) = 0;
+
+    virtual void fit (const Mat&, const Veci&, const Vec&) {}
+
+    virtual int predict (const Vec&) = 0;
+
+    virtual Veci predict (const Mat&) = 0;
 
 
-    virtual void fit_ (const Mat&, const Veci&) = 0;
-
-    virtual void fit_ (const Mat&, const Veci&, const Vec&) {}
-
-    virtual int predict_ (const Vec&) = 0;
-
-    virtual Veci predict_ (const Mat&) = 0;
-
-
-    virtual Classifier<EncodeLabels>* clone () const = 0;
+    virtual Classifier* clone () const = 0;
 };
 
 
 
-template <class Impl, bool EncodeLabels = true>
-struct ClassifierClone : public Classifier<EncodeLabels>
-{
-    using Base = Classifier<EncodeLabels>;
-
-    virtual Base* clone () const
-    {
-        return new Impl(static_cast<const Impl&>(*this));
-    }
-};
+// template <class Impl, bool EncodeLabels = true>
+// struct ClassifierClone : public Classifier<EncodeLabels>
+// {
+    // virtual Classifier<EncodeLabels>* clone () const
+    // {
+    //     return new Impl(static_cast<const Impl&>(*this));
+    // }
+// };
 
 
 }
 
 
 
-template <class T, bool EncodeLabels = true, bool Polymorphic = false>
-using PickClassifierBase = std::conditional_t<Polymorphic, poly::ClassifierClone<T, EncodeLabels>,
-                                                           Classifier<T, EncodeLabels>>;
+template <bool Polymorphic = false>
+using PickClassifier = std::conditional_t<Polymorphic, poly::Classifier, Classifier>;
 
 
 

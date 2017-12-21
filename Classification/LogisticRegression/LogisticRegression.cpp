@@ -84,13 +84,16 @@ int main ()
 
 
 
-    // LogisticRegression<L2> lr("Multi", 1e-7);
-
+    // LogisticRegression<> lr("Multi", 1e-4);
+    // //poly::Classifier* ptr = new poly::LogisticRegression<>("Multi", 1e-4);
+    // //poly::Classifier& lr = *ptr;
+    
 
     // double runTime = benchmark([&]
     // {
     //     lr.fit(X_train, y_train);
     // });
+
 
     // Veci y_pred = lr.predict(X_test);
 
@@ -98,7 +101,9 @@ int main ()
 
 
 
-    LogisticRegression<L2> lr("Multi");
+
+    LogisticRegression<> lr;
+
 
     vector<double> alphas;
 

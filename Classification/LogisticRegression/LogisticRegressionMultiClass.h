@@ -1,9 +1,6 @@
 #ifndef CPP_ML_LOGISTIC_REGRESSION_MULTICLASS_H
 #define CPP_ML_LOGISTIC_REGRESSION_MULTICLASS_H
 
-#include "../../Modelo.h"
-
-#include "../Classifier.h"
 
 #include "LogisticRegressionBase.h"
 
@@ -14,25 +11,18 @@
 namespace impl
 {
 
-template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>,
-          bool EncodeLabels = true, bool Polymorphic = false>
-struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer, Optimizer>,
-                                      PickClassifierBase<LogisticRegressionMultiClass<Regularizer, Optimizer,
-                                                         EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>
+template <class Regularizer = L2, class Optimizer = Newton<>, bool Polymorphic = true>
+struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer, Optimizer, Polymorphic>
 {
-    USING_LOGISTIC_REGRESSION(LogisticRegressionBase<Regularizer, Optimizer>);
-    USING_CLASSIFIER(PickClassifierBase<LogisticRegressionMultiClass<Regularizer, Optimizer,
-                                        EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
-
-
+    USING_LOGISTIC_REGRESSION(LogisticRegressionBase<Regularizer, Optimizer, Polymorphic>);
 
     
-    void fit_ (const Mat& X, const Veci& y)
+    void fit (const Mat& X, const Veci& y)
     {
-        fit_(X, y, 1e-6, 50);
+        fit(X, y, 1e-6, 50);
     }
 
-    void fit_ (const Mat& X, const Veci& y, double gTol, int maxIter = 50)
+    void fit (const Mat& X, const Veci& y, double gTol, int maxIter = 50)
     {
         M = X.rows(), N = X.cols();
 
@@ -45,14 +35,14 @@ struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer,
 
 
 
-    int predict_ (const Vec& x)
+    int predict (const Vec& x)
     {
         Vec vals = predictMargin(x);
         
         return std::max_element(std::begin(vals), std::end(vals)) - std::begin(vals);
     }
 
-    Veci predict_ (const Mat& X)
+    Veci predict (const Mat& X)
     {
         Mat vals = predictMargin(X);
         vals.transposeInPlace();
@@ -184,16 +174,17 @@ struct LogisticRegressionMultiClass : public LogisticRegressionBase<Regularizer,
 
 
 
-template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool EncodeLabels = true>
-using LogisticRegressionMultiClass = impl::LogisticRegressionMultiClass<Regularizer, Optimizer, EncodeLabels, false>;
+template <class Regularizer = L2, class Optimizer = Newton<>, bool EncodeLabels = true>
+using LogisticRegressionMultiClass = impl::Classifier<impl::LogisticRegressionMultiClass<Regularizer, Optimizer, false>, 
+                                                      EncodeLabels>;
 
 
 namespace poly
 {
-    template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool EncodeLabels = true>
-    using LogisticRegressionMultiClass = impl::LogisticRegressionMultiClass<Regularizer, Optimizer, EncodeLabels, true>;
+template <class Regularizer = L2, class Optimizer = Newton<>, bool EncodeLabels = true>
+using LogisticRegressionMultiClass = impl::Classifier<impl::LogisticRegressionMultiClass<Regularizer, Optimizer, true>, 
+                                                      EncodeLabels>;
 }
-
 
 
 

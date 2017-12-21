@@ -1,12 +1,15 @@
 #ifndef CPP_ML_LOGISTIC_REGRESSION_BASE_H
 #define CPP_ML_LOGISTIC_REGRESSION_BASE_H
 
-#include "../../Modelo.h"
-
 #include "../Classifier.h"
 
+#include "../../Regularizers.h"
 
-#define USING_LOGISTIC_REGRESSION(...) using BaseLogisticRegression = __VA_ARGS__;              \
+#include "../../Optimization/Newton/Newton.h"
+
+
+#define USING_LOGISTIC_REGRESSION(...) USING_CLASSIFIER_BASE(__VA_ARGS__);                      \
+                                       using BaseLogisticRegression = __VA_ARGS__;              \
                                        using BaseLogisticRegression::BaseLogisticRegression,    \
                                              BaseLogisticRegression::alpha,                     \
                                              BaseLogisticRegression::regularizer,               \
@@ -16,9 +19,17 @@
                                              BaseLogisticRegression::logSoftmax;
 
 
-template <class Regularizer, class Optimizer>
-struct LogisticRegressionBase
+
+namespace impl
 {
+
+template <class Regularizer = L2, class Optimizer = Newton<>, bool Polymorphic = false>
+struct LogisticRegressionBase : public PickClassifier<Polymorphic>
+{
+    USING_CLASSIFIER_BASE(PickClassifier<Polymorphic>);
+    using BaseClassifier::BaseClassifier;
+    
+
     LogisticRegressionBase (double alpha = 1e-8, const Optimizer& optimizer = Optimizer()) :
                             alpha(alpha), optimizer(optimizer) {}
 
@@ -80,6 +91,20 @@ struct LogisticRegressionBase
 
     Optimizer optimizer;
 };
+
+} // namespace impl
+
+
+
+template <class Regularizer = L2, class Optimizer = Newton<>>
+using LogisticRegressionBase = impl::LogisticRegressionBase<Regularizer, Optimizer, false>;
+
+namespace poly
+{
+template <class Regularizer = L2, class Optimizer = Newton<>>
+using LogisticRegressionBase = impl::LogisticRegressionBase<Regularizer, Optimizer, true>;
+}
+
 
 
 #endif // CPP_ML_LOGISTIC_REGRESSION_BASE_H
