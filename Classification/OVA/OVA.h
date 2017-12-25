@@ -1,8 +1,6 @@
 #ifndef CPP_ML_OVA_H
 #define CPP_ML_OVA_H
 
-#include "../../Modelo.h"
-
 #include "../Classifier.h"
 
 
@@ -10,36 +8,35 @@
 namespace impl
 {
 
-template <class Cls>
-struct OVA : public Cls
+template <class Cls, bool Polymorphic = false>
+struct OVA : public PickClassifier<Polymorphic>
 {
 public:
 
-    USING_CLASSIFIER(Cls);
-    using Cls::Cls;
+    USING_CLASSIFIER(PickClassifier<Polymorphic>);
+    using BaseClassifier::BaseClassifier;
 
 
-    // template <typename... Args>
-    // OVA (Args&&... args) : baseClassifier(std::forward<Args>(args)...) {}
+    template <typename... Args>
+    OVA (Args&&... args) : baseClassifier(std::forward<Args>(args)...) {}
     
 
     void fit (const Mat& X, const Veci& y)
     {
-        M = X.rows(), N = X.cols();
+        baseClassifier.numClasses = 2;
 
-        classifiers.resize(numClasses, *this);
+        classifiers.resize(numClasses, baseClassifier);
 
         Veci yk(M);
-
 
         for(int k = 0; k < numClasses; ++k)
         {
             std::transform(std::begin(y), std::end(y), std::begin(yk), [&](int x)
             {
-                return x == k ? positiveClass : negativeClass;
+                return x == k ? baseClassifier.positiveClass : baseClassifier.negativeClass;
             });
 
-            classifiers[k].fit(X, yk);
+            classifiers[k].fit(X, yk, false);
         }
     }
 
@@ -89,6 +86,7 @@ public:
     Vec predictProb (const Mat&) { return Vec(); }
 
     
+    Cls baseClassifier;
 
     std::vector<Cls> classifiers;
 };
@@ -97,7 +95,16 @@ public:
 
 
 template <class Cls, bool EncodeLabels = true>
-using OVA = impl::Classifier<impl::OVA<Cls>, EncodeLabels>;
+using OVA = impl::Classifier<impl::OVA<Cls, false>, EncodeLabels>;
+
+
+namespace poly
+{
+
+template <class Cls, bool EncodeLabels = true>
+using OVA = impl::Classifier<impl::OVA<Cls, true>, EncodeLabels>;
+
+}
 
 
 #endif // CPP_ML_OVA_H

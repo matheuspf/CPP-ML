@@ -35,7 +35,7 @@ int main ()
 
 
 
-    BayesianLogisticRegression<> blr;
+    BayesianLogisticRegression<> blr(string("Multi"));
 
     double runtime = benchmark([&]
     {

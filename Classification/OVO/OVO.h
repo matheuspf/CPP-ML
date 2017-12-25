@@ -1,29 +1,29 @@
 #ifndef CPP_ML_OVO_H
 #define CPP_ML_OVO_H
 
-#include "../../Modelo.h"
-
-#include "../../Preprocessing/Preprocess.h"
-
 #include "../Classifier.h"
 
 
 
-template <class Cls, bool EncodeLabels = true>
-struct OVO : public std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVO<Cls, EncodeLabels>, EncodeLabels>>
+namespace impl
+{
+
+template <class Cls, bool Polymorphic = true>
+struct OVO : public PickClassifier<Polymorphic>
 {
 public:
 
-    USING_CLASSIFIER(std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVO<Cls, EncodeLabels>, EncodeLabels>>);
+    USING_CLASSIFIER(PickClassifier<Polymorphic>);
+    using BaseClassifier::BaseClassifier;
 
 
     template <typename... Args>
     OVO (Args&&... args) : baseClassifier(std::forward<Args>(args)...) {}
 
 
-    void fit_ (const Mat& X, const Veci& y)
+    void fit (const Mat& X, const Veci& y)
     {
-        M = X.rows(), N = X.cols();
+        baseClassifier.numClasses = 2;
 
         classifiers = MatX<Cls>::Constant(numClasses, numClasses, baseClassifier);
 
@@ -49,17 +49,17 @@ public:
 
                 std::transform(std::begin(yk), std::end(yk), std::begin(yk), [&](int x)
                 {
-                    return x == k ? positiveClass : negativeClass;
+                    return x == k ? baseClassifier.positiveClass : baseClassifier.negativeClass;
                 });
 
-                classifiers(k, l).fit_(Xk, yk);
+                classifiers(k, l).fit(Xk, yk, false);
             }
         }
     }
 
 
 
-    Veci predict_ (const Mat& X)
+    Veci predict (const Mat& X)
     {
         MatX<Vec> probs(numClasses, numClasses);
         Mat vals = Mat::Constant(X.rows(), numClasses, 0.0);
@@ -94,7 +94,7 @@ public:
 
 
 
-    int predict_ (const Vec&) { return 0; }
+    int predict (const Vec&) { return 0; }
 
 
     Vec predictMargin (const Mat&) { return Vec(); }
@@ -106,6 +106,21 @@ public:
 
     MatX<Cls> classifiers;
 };
+
+} // namespace impl
+
+
+template <class Cls, bool EncodeLabels = true>
+using OVO = impl::Classifier<impl::OVO<Cls, false>, EncodeLabels>;
+
+
+namespace poly
+{
+
+template <class Cls, bool EncodeLabels = true>
+using OVO = impl::Classifier<impl::OVO<Cls, true>, EncodeLabels>;
+
+}
 
 
 

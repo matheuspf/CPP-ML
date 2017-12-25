@@ -32,6 +32,12 @@ struct BayesianLogisticRegressionTwoClass : public LogisticRegressionTwoClass<L2
         intercept = w(N-1);
         
         w.conservativeResize(N-1);
+
+        snR = Sn.row(N-1).head(N-1);
+        snC = Sn.col(N-1).head(N-1);
+        snNN = Sn(N-1, N-1);
+
+        Sn.conservativeResize(N-1, N-1);
     }
 
 
@@ -91,7 +97,9 @@ struct BayesianLogisticRegressionTwoClass : public LogisticRegressionTwoClass<L2
 
     double predictProb (const Vec& x)
     {
-        return sigmoid(kappa(x.dot(Sn * x)) * predictMargin(x));
+        double dot = x.dot((Sn * x) + snR) + x.dot(snC) + snNN;
+
+        return sigmoid(kappa(dot) * predictMargin(x));
     }
 
     Vec predictProb (const Mat& X)
@@ -109,6 +117,11 @@ struct BayesianLogisticRegressionTwoClass : public LogisticRegressionTwoClass<L2
 
 
     Mat Sn;
+
+    Vec snR;
+    Vec snC;
+
+    double snNN;
 
 };
 

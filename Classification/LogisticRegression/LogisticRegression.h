@@ -2,13 +2,14 @@
 #define CPP_ML_LOGISTIC_REGRESSION_H
 
 
-// #include "../OVO/OVO.h"
-
 #include "LogisticRegressionTwoClass.h"
 
 #include "LogisticRegressionMultiClass.h"
 
-//#include "../OVA/OVA.h"
+#include "../OVA/OVA.h"
+
+#include "../OVO/OVO.h"
+
 
 
 namespace impl
@@ -36,6 +37,8 @@ struct LogisticRegression : public LogisticRegressionBase<Regularizer, Optimizer
 
     LogisticRegression& operator= (const LogisticRegression& lr)
     {
+        BaseLogisticRegression::operator=(lr);
+
         if(lr.impl)
             impl = std::unique_ptr<poly::Classifier>(lr.impl->clone());
 
@@ -53,11 +56,11 @@ struct LogisticRegression : public LogisticRegressionBase<Regularizer, Optimizer
         
         else
         {
-            if(multiClassType == "OVA");
-                //impl = std::make_unique<::OVA<impl::LogisticRegressionTwoClass<Regularizer, Optimizer, true>, false>>(alpha, optimizer);
+            if(multiClassType == "OVA")
+                impl = std::make_unique<poly::OVA<::LogisticRegressionTwoClass<Regularizer, Optimizer, false>, false>>(alpha, optimizer);
 
-            else if(multiClassType == "OVO");
-                //impl = std::make_unique<OVO<poly::LogisticRegressionTwoClass<Regularizer, Optimizer, false>, false>>(alpha, optimizer);
+            else if(multiClassType == "OVO")
+                impl = std::make_unique<poly::OVO<::LogisticRegressionTwoClass<Regularizer, Optimizer, false>, false>>(alpha, optimizer);
 
             else if(multiClassType == "Multi")
                 impl = std::make_unique<poly::LogisticRegressionMultiClass<Regularizer, Optimizer, false>>(alpha, optimizer);
@@ -68,6 +71,7 @@ struct LogisticRegression : public LogisticRegressionBase<Regularizer, Optimizer
                 exit(0);
             }
         }
+        
         
         impl->numClasses = numClasses;
 
@@ -126,8 +130,10 @@ using LogisticRegression = impl::Classifier<impl::LogisticRegression<Regularizer
 
 namespace poly
 {
+
 template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool EncodeLabels = true>
 using LogisticRegression = impl::Classifier<impl::LogisticRegression<Regularizer, Optimizer, true>, EncodeLabels>;
+
 } // namespace poly
 
 
