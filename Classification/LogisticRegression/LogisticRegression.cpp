@@ -30,16 +30,16 @@ int main ()
 
 
 
-    auto [X, y] = pickTarget(readMat("../../Data/Wine.txt", ','), 0);
-    //auto [X, y] = pickTarget(readMat("../../Data/mushroom.txt", ','), 0);
+    //auto [X, y] = pickTarget(readMat("../../Data/Wine.txt", ','), 0);
+    auto [X, y] = pickTarget(readMat("../../Data/mushroom.txt", ','), 0);
     //auto [X, y] = pickTarget(readMat("../../Data/abalone.txt", ','), 1);
     
     //X = X.block(0, 0, 130, X.cols()-1);    
 
 
-    // OneHotEncoding ohe;
+    OneHotEncoding ohe;
 
-    // X = ohe.fitTransform(X);
+    X = ohe.fitTransform(X);
 
 
     // PCA pca(20);
@@ -48,7 +48,7 @@ int main ()
 
 
 
-    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.5, 1);
+    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.3, 1);
     // Mat X_train = X;
     // Mat X_test = X;
     // Veci y_train = y;
@@ -84,10 +84,10 @@ int main ()
 
 
 
-    // LogisticRegression<> lr("Multi", 1e-4);
+    // LogisticRegression<> lr("OVO", 6.0);
     // //poly::Classifier* ptr = new poly::LogisticRegression<>("Multi", 1e-4);
     // //poly::Classifier& lr = *ptr;
-    
+
 
     // double runTime = benchmark([&]
     // {
@@ -102,7 +102,7 @@ int main ()
 
 
 
-    LogisticRegression<> lr;
+    LogisticRegression<> lr(string("Multi"));
 
 
     vector<double> alphas;
@@ -110,7 +110,7 @@ int main ()
     for(double x = -10; x <= 10; x += 0.2)
         alphas.pb(pow(10, x));
 
-    auto gs = makeGridsearchCV(lr, make_pair([](auto& cls, double a){ cls.alpha = a; }, alphas), 10, Accuracy());
+    auto gs = makeGridsearchCV(lr, make_pair([](auto& cls, double a){ cls.alpha = a; }, alphas), 5, Accuracy());
     
     double runTime = benchmark([&]
     {
@@ -129,7 +129,7 @@ int main ()
 
     
 
-    db("\n", lr.alpha, "\n");
+    db("\nalpha:  ", lr.alpha, "\n");
 
     //db(y_test.transpose().head(min(int(y_test.size()), 20)), "\n\n", y_pred.transpose().head(min(int(y_pred.size()), 20)), "\n\n\n");
 

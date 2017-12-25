@@ -8,10 +8,9 @@
 
 #include "BayesianLogisticRegressionMultiClass.h"
 
+#include "../OVA/OVA.h"
 
-//#include "../OVA/OVA.h"
-
-//#include "../OVO/OVO.h"
+#include "../OVO/OVO.h"
 
 
 
@@ -26,6 +25,22 @@ struct BayesianLogisticRegression : public PickClassifier<Polymorphic>
     using BaseClassifier::BaseClassifier;
 
 
+    BayesianLogisticRegression (const std::string& multiClassType = "Multi") : multiClassType(multiClassType) {}
+
+    BayesianLogisticRegression (const BayesianLogisticRegression& blr) : BaseClassifier(blr), multiClassType(multiClassType),
+                                                                         impl(blr.impl ? blr.impl->clone() : nullptr) {}
+
+
+    BayesianLogisticRegression& operator = (const BayesianLogisticRegression& blr)
+    {
+        BaseClassifier::operator=(blr);
+
+        if(blr.impl)
+            impl = std::unique_ptr<poly::Classifier>(blr.impl->clone());
+
+        multiClassType = blr.multiClassType;
+    }
+
 
     void fit (const Mat& X, const Veci& y)
     {
@@ -33,7 +48,22 @@ struct BayesianLogisticRegression : public PickClassifier<Polymorphic>
             impl = std::make_unique<poly::BayesianLogisticRegressionTwoClass<false>>();
         
         else
-            impl = std::make_unique<poly::BayesianLogisticRegressionMultiClass<false>>();
+        {
+            if(multiClassType == "OVA")
+                impl = std::make_unique<poly::OVA<::BayesianLogisticRegressionTwoClass<false>>>();
+            
+            else if(multiClassType == "OVO")
+                impl = std::make_unique<poly::OVO<::BayesianLogisticRegressionTwoClass<false>>>();
+
+            else if(multiClassType == "Multi")
+                impl = std::make_unique<poly::BayesianLogisticRegressionMultiClass<false>>();
+
+            else
+            {
+                std::cerr << "Invalid multiClassType:  " << multiClassType << "\n";
+                exit(0);
+            }
+        }
 
         
         impl->numClasses = numClasses;
@@ -77,7 +107,8 @@ struct BayesianLogisticRegression : public PickClassifier<Polymorphic>
     // }
     
 
-    
+    std::string multiClassType;
+
     std::unique_ptr<poly::Classifier> impl;
 };
 
