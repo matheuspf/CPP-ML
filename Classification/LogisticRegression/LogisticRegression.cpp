@@ -48,7 +48,7 @@ int main ()
 
 
 
-    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.3, 1);
+    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.5, 1);
     // Mat X_train = X;
     // Mat X_test = X;
     // Veci y_train = y;
@@ -84,13 +84,16 @@ int main ()
 
 
 
-    // LogisticRegression<L2> lr("Multi", 1e-7);
-
+    // LogisticRegression<> lr("Multi", 1e-4);
+    // //poly::Classifier* ptr = new poly::LogisticRegression<>("Multi", 1e-4);
+    // //poly::Classifier& lr = *ptr;
+    
 
     // double runTime = benchmark([&]
     // {
     //     lr.fit(X_train, y_train);
     // });
+
 
     // Veci y_pred = lr.predict(X_test);
 
@@ -98,7 +101,9 @@ int main ()
 
 
 
-    LogisticRegression<L2> lr("Multi");
+
+    LogisticRegression<> lr;
+
 
     vector<double> alphas;
 
@@ -106,12 +111,15 @@ int main ()
         alphas.pb(pow(10, x));
 
     auto gs = makeGridsearchCV(lr, make_pair([](auto& cls, double a){ cls.alpha = a; }, alphas), 10, Accuracy());
+    
+    double runTime = benchmark([&]
+    {
+        gs.fit(X_train, y_train);
 
-    gs.fit(X_train, y_train);
+        lr = gs.bestEstimator;
 
-    lr = gs.bestEstimator;
-
-    lr.fit(X_train, y_train);
+        lr.fit(X_train, y_train);
+    });
 
 
     Veci y_pred = lr.predict(X_test);
@@ -121,16 +129,16 @@ int main ()
 
     
 
-    db("\n\n\n", lr.alpha, "\n");
+    db("\n", lr.alpha, "\n");
 
-    db(y_test.transpose().head(min(int(y_test.size()), 20)), "\n\n", y_pred.transpose().head(min(int(y_pred.size()), 20)), "\n\n\n");
+    //db(y_test.transpose().head(min(int(y_test.size()), 20)), "\n\n", y_pred.transpose().head(min(int(y_pred.size()), 20)), "\n\n\n");
 
 
     db("Train error:    ", (y_train.array() == y_pred_train.array()).cast<double>().sum() / y_train.rows(), "\n");
 
     db("Test error:     ", (y_test.array() == y_pred.array()).cast<double>().sum() / y_test.rows(), "\n");
 
-    //db(runTime);
+    db(runTime, "\n");
 
 
 

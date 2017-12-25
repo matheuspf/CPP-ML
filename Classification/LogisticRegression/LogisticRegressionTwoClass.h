@@ -1,13 +1,6 @@
 #ifndef CPP_ML_LOGISTIC_REGRESSION_TWO_CLASS
 #define CPP_ML_LOGISTIC_REGRESSION_TWO_CLASS
 
-#include "../../Modelo.h"
-
-#include "../Classifier.h"
-
-#include "../../Regularizers.h"
-
-#include "../../Optimization/Newton/Newton.h"
 
 #include "LogisticRegressionBase.h"
 
@@ -16,18 +9,13 @@
 namespace impl
 {
 
-template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>,
-          bool EncodeLabels = true, bool Polymorphic = false>
-struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, Optimizer>,
-                                           PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer,
-                                                              EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>
+template <class Regularizer = L2, class Optimizer = Newton<>, bool Polymorphic = false>
+struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, Optimizer, Polymorphic>
 {
-    USING_LOGISTIC_REGRESSION(LogisticRegressionBase<Regularizer, Optimizer>);
-    USING_CLASSIFIER(PickClassifierBase<LogisticRegressionTwoClass<Regularizer, Optimizer,
-                                        EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
+    USING_LOGISTIC_REGRESSION(LogisticRegressionBase<Regularizer, Optimizer, Polymorphic>);
 
-
-    void fit_ (const Mat& X, const Veci& y)
+        
+    void fit (const Mat& X, const Veci& y)
     {
         M = X.rows(), N = X.cols();
 
@@ -52,7 +40,7 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
         
         // w = optimizer(func, grad, w);
 
-        optimize(X, y);
+        optimize(X, y, 1e-8);
 
 
         intercept = w(N-1);
@@ -62,12 +50,12 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
 
 
 
-    int predict_ (const Vec& x)
+    int predict (const Vec& x)
     {
         return predictMargin(x) > 0.0;
     }
 
-    Veci predict_ (const Mat& X)
+    Veci predict (const Mat& X)
     {
         return (ArrayXd(predictMargin(X)) > 0.0).cast<int>();
     }
@@ -97,13 +85,14 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
 
 
 
-    void optimize (const Mat& X, const Veci& y)
+    auto optimizeFunc (const Mat& X, const Veci& y)
     {
-        w = Vec::Constant(N, 0.0);
+        static Vec a, s, R, g;
 
-        Vec a, s, R, g;
+        static Mat H;
+        
 
-        for(int i = 0; i < 50; ++i)
+        return [&](const Vec& w)
         {
             a = X * w;
 
@@ -113,9 +102,35 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
 
             g = X.transpose() * (s - y.cast<double>()) + alpha * w;
 
-            w = w - inverseMat(X.transpose() * R.asDiagonal() * X + alpha * Mat::Identity(N, N)) * g;    
+            H = X.transpose() * R.asDiagonal() * X;
 
-            if(g.norm() < 1e-8)
+            H.diagonal().array() += alpha;
+
+
+            return std::tie(g, H);
+        };
+    }
+
+
+
+    void optimize (const Mat& X, const Veci& y, double gTol)
+    {
+        w = Vec::Constant(N, 0.0);
+
+        auto func = optimizeFunc(X, y);
+
+        Vec g;
+
+        Mat H;
+
+
+        for(int i = 0; i < 50; ++i)
+        {
+            std::tie(g, H) = func(w);
+
+            w = w - solveMat(H, g);
+
+            if(g.norm() < gTol)
                 break;
         }
     }
@@ -131,14 +146,18 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
 
 
 
-template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool EncodeLabels = true>
-using LogisticRegressionTwoClass = impl::LogisticRegressionTwoClass<Regularizer, Optimizer, EncodeLabels, false>;
+
+
+template <class Regularizer = L2, class Optimizer = Newton<>, bool EncodeLabels = true>
+using LogisticRegressionTwoClass = impl::Classifier<impl::LogisticRegressionTwoClass<Regularizer, Optimizer, false>, 
+                                                    EncodeLabels>;
 
 
 namespace poly
 {
-    template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool EncodeLabels = true>
-    using LogisticRegressionTwoClass = impl::LogisticRegressionTwoClass<Regularizer, Optimizer, EncodeLabels, true>;
+template <class Regularizer = L2, class Optimizer = Newton<>, bool EncodeLabels = true>
+using LogisticRegressionTwoClass = impl::Classifier<impl::LogisticRegressionTwoClass<Regularizer, Optimizer, true>, 
+                                                    EncodeLabels>;
 }
               
 

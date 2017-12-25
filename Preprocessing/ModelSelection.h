@@ -118,7 +118,7 @@ Vec crossValScore (Estimator&& estimator, const Data& X, const Labels& y, int K 
 template <class Estimator, class ParamGrid, class Scorer = SquaredError>
 struct GridSearchCV
 {
-    GridSearchCV (Estimator estimator, ParamGrid paramGrid, int K = 2, Scorer scorer = Scorer(), int rngState = 0) :
+    GridSearchCV (const Estimator& estimator, ParamGrid paramGrid, int K = 2, Scorer scorer = Scorer(), int rngState = 0) :
                   estimator(estimator), paramGrid(paramGrid), K(K), scorer(scorer), rngState(rngState) {}
 
 
@@ -176,14 +176,14 @@ struct GridSearchCV
 
 template <class Estimator, class ParamGrid, class Scorer = SquaredError,
           enable_if_t<IsSpecialization<ParamGrid, std::tuple>::value, int> = 0>
-auto makeGridsearchCV (Estimator estimator, ParamGrid paramGrid, int K = 2, Scorer scorer = Scorer())
+auto makeGridsearchCV (const Estimator& estimator, ParamGrid paramGrid, int K = 2, Scorer scorer = Scorer())
 {
     return GridSearchCV<Estimator, ParamGrid, Scorer>(estimator, paramGrid, K, scorer);
 }
 
 template <class Estimator, class ParamGrid, class Scorer = SquaredError,
           enable_if_t<!IsSpecialization<ParamGrid, std::tuple>::value, int> = 0>
-auto makeGridsearchCV (Estimator estimator, ParamGrid paramGrid, int K = 2, Scorer scorer = Scorer())
+auto makeGridsearchCV (const Estimator& estimator, ParamGrid paramGrid, int K = 2, Scorer scorer = Scorer())
 {
 return GridSearchCV<Estimator, std::tuple<ParamGrid>, Scorer>(estimator, std::make_tuple(paramGrid), K, scorer);
 }

@@ -1,172 +1,103 @@
-#ifndef CPP_ML_BAYESIAN_LOGISTIC_REGRESSION_H
-#define CPP_ML_BAYESIAN_LOGISTIC_REGRESSION_H
+#ifndef CPP_ML_LOGISTIC_REGRESSION_H
+#define CPP_ML_LOGISTIC_REGRESSION_H
 
-#include "../Classifier.h"
 
-#include "../../Optimization/LineSearch/Brents/Brents.h"
+#include "../LogisticRegression/LogisticRegression.h"
+
+#include "BayesianLogisticRegressionTwoClass.h"
+
+#include "BayesianLogisticRegressionMultiClass.h"
+
+
+//#include "../OVA/OVA.h"
+
+//#include "../OVO/OVO.h"
+
 
 
 
 namespace impl
 {
 
-template <bool EncodeLabels = true, bool Polymorphic = false>
-struct BayesianLogisticRegression : PickClassifierBase<BayesianLogisticRegression<EncodeLabels, Polymorphic>,
-                                                        EncodeLabels, Polymorphic>
+template <bool Polymorphic = false>
+struct BayesianLogisticRegression : public PickClassifier<Polymorphic>
 {
-    USING_CLASSIFIER(PickClassifierBase<BayesianLogisticRegression<EncodeLabels, Polymorphic>,
-                                                        EncodeLabels, Polymorphic>);
+    USING_CLASSIFIER(PickClassifier<Polymorphic>);
+    using BaseClassifier::BaseClassifier;
 
 
-    void fit_ (const Mat& X, const Veci& y)
+
+    void fit (const Mat& X, const Veci& y)
     {
-        fit_(X, y, 1e-4, 1e-4, 50);
-    }
-
-
-    void fit_ (const Mat& X, const Veci& y, double gTol, double aTol = 1e-4, int maxIter = 50)
-    {
-        optimize(X, y, gTol, aTol, maxIter);
-
-        intercept = w(N-1);
+        if(numClasses == 2)
+            impl = std::make_unique<poly::BayesianLogisticRegressionTwoClass<false>>();
         
-        w.conservativeResize(N-1);
-    }
-
-
-
-    void optimize (const Mat& X, const Veci& y, double gTol, double aTol, int maxIter)
-    {
-        w = Vec::Constant(N, 0.0);
-
-        w(N-1) = 1.0;
-
-        alpha = 0.0;
-
-        double oldAlpha = alpha;
-
-        Vec a, s, R, g;
+        else
+            impl = std::make_unique<poly::BayesianLogisticRegressionMultiClass<false>>();
 
         
-        for(int i = 0; i < maxIter; ++i)
-        {
-            a = X * w;
+        impl->numClasses = numClasses;
 
-            s = sigmoid(a.array());
-
-            R = s.array() * (1.0 - s.array());
-
-            g = X.transpose() * (s - y.cast<double>()) + alpha * w;
-
-            Sn = X.transpose() * R.asDiagonal() * X;
-
-            Sn.diagonal().array() += alpha;
-
-            w = w - solveMat(Sn, g);
-
-
-            Eigen::EigenSolver<Mat> eigSolver(Sn);
-
-            ArrayXd eigVals = 1.0 / eigSolver.eigenvalues().real().array();
-
-            double gamma = (eigVals / (alpha + eigVals)).sum();
-
-            oldAlpha = alpha;
-
-            alpha = gamma / w.dot(w);
-
-
-            if(g.norm() < gTol && std::abs(alpha - oldAlpha) < aTol)
-                break;
-        }
+        impl->fit(X, y, false);
     }
 
 
 
-
-
-    int predict_ (const Vec& x)
+    int predict (const Vec& x)
     {
-        return predictMargin(x) > 0.0;
+        return impl->predict(x);
     }
 
-    Veci predict_ (const Mat& X)
+    Veci predict (const Mat& X)
     {
-        return (ArrayXd(predictMargin(X)) > 0.0).cast<int>();
-    }
-
-
-    double predictProb (const Vec& x)
-    {
-        return sigmoid(kappa(x.dot(Sn * x)) * predictMargin(x));
-    }
-
-    Vec predictProb (const Mat& X)
-    {
-        return Vec::NullaryExpr(X.rows(), [&](int i){ return predictProb(Vec(X.row(i))); });
-    }
-
-
-    double predictMargin (const Vec& x)
-    {
-        return w.dot(x) + intercept;
-    }
-
-    Vec predictMargin (const Mat& X)
-    {
-        return (X * w).array() + intercept;
+        return impl->predict(X);
     }
 
 
 
+    // double predictProb (const Vec& x)
+    // {
+    //     return impl->predictProb(x);
+    // }
 
-    template <class T>
-    static auto sigmoid (const T& x)
-    {
-        return 1.0 / (1.0 + exp(-x));
-    }
-
-
-    template <typename T>
-    auto kappa (const T& sigma)
-    {
-        return sqrt(1.0 + pi() * (sigma / 8.0));
-    }
+    // Vec predictProb (const Mat& X)
+    // {
+    //     return impl->predictProb(X);
+    // }
 
 
+    // double predictMargin (const Vec& x)
+    // {
+    //     return return impl->predictMargin(x);
+    // }
 
+    // Vec predictMargin (const Mat& X)
+    // {
+    //     return impl->predictMargin(X);
+    // }
+    
 
-    Vec w;
-
-    double intercept;
-
-    double alpha;
-
-    Mat Sn;
-
+    
+    std::unique_ptr<poly::Classifier> impl;
 };
 
-
-}
+} // namespace impl
 
 
 
 template <bool EncodeLabels = true>
-using BayesianLogisticRegression = impl::BayesianLogisticRegression<EncodeLabels, false>;
-
+using BayesianLogisticRegression =  impl::Classifier<impl::BayesianLogisticRegression<false>, EncodeLabels>;
 
 namespace poly
 {
 
 template <bool EncodeLabels = true>
-using BayesianLogisticRegression = impl::BayesianLogisticRegression<EncodeLabels, true>;
-    
-}
+using BayesianLogisticRegression =  impl::Classifier<impl::BayesianLogisticRegression<true>, EncodeLabels>;
+
+} // namespace poly
 
 
 
 
 
-
-
-#endif // CPP_ML_BAYESIAN_LOGISTIC_REGRESSION_H
+#endif // CPP_ML_LOGISTIC_REGRESSION_H

@@ -7,24 +7,27 @@
 
 
 
+namespace impl
+{
 
-template <class Cls, bool EncodeLabels = true>
-struct OVA : public std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls, EncodeLabels>, EncodeLabels>>
+template <class Cls>
+struct OVA : public Cls
 {
 public:
 
-    USING_CLASSIFIER(std::conditional_t<std::is_polymorphic<Cls>::value, Cls, Classifier<OVA<Cls, EncodeLabels>, EncodeLabels>>);
+    USING_CLASSIFIER(Cls);
+    using Cls::Cls;
 
 
-    template <typename... Args>
-    OVA (Args&&... args) : baseClassifier(std::forward<Args>(args)...) {}
+    // template <typename... Args>
+    // OVA (Args&&... args) : baseClassifier(std::forward<Args>(args)...) {}
     
 
-    void fit_ (const Mat& X, const Veci& y)
+    void fit (const Mat& X, const Veci& y)
     {
         M = X.rows(), N = X.cols();
 
-        classifiers.resize(numClasses, baseClassifier);
+        classifiers.resize(numClasses, *this);
 
         Veci yk(M);
 
@@ -36,13 +39,13 @@ public:
                 return x == k ? positiveClass : negativeClass;
             });
 
-            classifiers[k].fit_(X, yk);
+            classifiers[k].fit(X, yk);
         }
     }
 
 
 
-    int predict_ (const Vec& x)
+    int predict (const Vec& x)
     {
         Vec classMargin(numClasses);
 
@@ -55,7 +58,7 @@ public:
     }
 
 
-    Veci predict_ (const Mat& X)
+    Veci predict (const Mat& X)
     {
         Mat classProb(X.rows(), numClasses);
 
@@ -88,9 +91,13 @@ public:
     
 
     std::vector<Cls> classifiers;
-
-    Cls baseClassifier;
 };
+
+}
+
+
+template <class Cls, bool EncodeLabels = true>
+using OVA = impl::Classifier<impl::OVA<Cls>, EncodeLabels>;
 
 
 #endif // CPP_ML_OVA_H

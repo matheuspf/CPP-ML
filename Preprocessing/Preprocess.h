@@ -380,6 +380,12 @@ struct LabelEncoder
 	}
 
 
+	int decode (const T& t)
+	{
+		return reverseMap[t];
+	}
+
+
 	int numClasses;
 
 	std::set<T> labelSet;
