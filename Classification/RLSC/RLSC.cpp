@@ -56,8 +56,8 @@ int main ()
     
 
     //OVA<poly::RLSC<LinearKernel>> rlsc(1e-1);
-    poly::Classifier<>* cls = new OVA<poly::RLSC<LinearKernel>>(1e-1);
-    poly::Classifier<>& rlsc = *cls;
+    poly::Classifier* cls = new poly::OVA<RLSC<LinearKernel, false>>(1e-1);
+    poly::Classifier& rlsc = *cls;
 
 
     // vector<double> alphas;
@@ -78,7 +78,7 @@ int main ()
 
     double runTime = benchmark([&]
     {
-        rlsc.fit(X_train, y_train);
+        rlsc.fit(X_train, y_train, false);
     });
 
     y_pred = rlsc.predict(X_test);

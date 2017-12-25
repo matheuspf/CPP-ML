@@ -13,10 +13,10 @@
 namespace impl
 {
 
-template <class Kernel = LinearKernel, bool EncodeLabels = true, bool Polymorphic = false>
-struct RLSC : public PickClassifierBase<RLSC<Kernel, EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>
+template <class Kernel = LinearKernel, bool Polymorphic = false>
+struct RLSC : public PickClassifier<Polymorphic>
 {
-    USING_CLASSIFIER(PickClassifierBase<RLSC<Kernel, EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
+    USING_CLASSIFIER(PickClassifier<Polymorphic>);
 
 
     RLSC (double alpha = 0.0, const Kernel& kernel = Kernel()) :
@@ -27,7 +27,7 @@ struct RLSC : public PickClassifierBase<RLSC<Kernel, EncodeLabels, Polymorphic>,
 
 
 
-    void fit_ (const Mat& X, const Veci& y)
+    void fit (const Mat& X, const Veci& y)
     {
         Z = X;
 
@@ -40,12 +40,12 @@ struct RLSC : public PickClassifierBase<RLSC<Kernel, EncodeLabels, Polymorphic>,
 
 
 
-    int predict_ (const Vec& x)
+    int predict (const Vec& x)
     {
         return predictMargin(x) > 0.0 ? positiveClass : negativeClass;
     }
 
-    Veci predict_ (const Mat& X)
+    Veci predict (const Mat& X)
     {
         Vec res = predictMargin(X);
         
@@ -83,14 +83,14 @@ struct RLSC : public PickClassifierBase<RLSC<Kernel, EncodeLabels, Polymorphic>,
 
 
 template <class Kernel = LinearKernel, bool EncodeLabels = true>
-using RLSC = impl::RLSC<Kernel, EncodeLabels, false>;
+using RLSC = impl::Classifier<impl::RLSC<Kernel, false>, EncodeLabels>;
 
 
 namespace poly
 {
 
 template <class Kernel = LinearKernel, bool EncodeLabels = true>
-using RLSC = impl::RLSC<Kernel, EncodeLabels, true>; 
+using RLSC = impl::Classifier<impl::RLSC<Kernel, true>, EncodeLabels>;
 
 }
 

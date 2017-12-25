@@ -19,7 +19,7 @@ int main ()
 
     auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.5, 1);
 
-    X_train = -X_train;
+    //X_train = -X_train;
 
 
 

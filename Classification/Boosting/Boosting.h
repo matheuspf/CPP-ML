@@ -10,22 +10,22 @@
 
 namespace impl
 {
-    template <class Cls = Stump<false, false>, bool EncodeLabels = true, bool Polymorphic = false>
-    struct Boosting : public PickClassifierBase<Boosting<Cls, EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>
+    template <class Cls = impl::Stump<false>, bool Polymorphic = false>
+    struct Boosting : public PickClassifier<Polymorphic>
     {
-        USING_CLASSIFIER(PickClassifierBase<Boosting<Cls, EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
+        USING_CLASSIFIER(PickClassifier<Polymorphic>);
 
 
         Boosting (const Cls& classifierModel = Cls()) : BaseClassifier(1, -1, false), classifierModel(classifierModel) {}
 
 
-        void fit_ (const Mat& X, const Veci& y)
+        void fit (const Mat& X, const Veci& y)
         {
-            fit_(X, y, 10);
+            fit(X, y, 10);
         }
 
 
-        void fit_ (const Mat& X, const Veci& y, int numClassifiers)
+        void fit (const Mat& X, const Veci& y, int numClassifiers)
         {
             classifiers.resize(numClassifiers, classifierModel);
             weights.resize(numClassifiers);
@@ -72,7 +72,7 @@ namespace impl
 
 
 
-        int predict_ (const Vec& x)
+        int predict (const Vec& x)
         {   
             double sum = std::accumulate(ZIP_ALL(classifiers, weights), 0.0, it::unZip([&](double sum, auto& cls, double w)
             {
@@ -84,12 +84,12 @@ namespace impl
             return sum > 0 ? positiveClass : negativeClass;
         }
 
-        Veci predict_ (const Mat& X)
+        Veci predict (const Mat& X)
         {
             Veci pred(X.rows());
 
             for(int i = 0; i < X.rows(); ++i)
-                pred(i) = predict_(Vec(X.row(i)));
+                pred(i) = predict(Vec(X.row(i)));
 
             return pred;
         }
@@ -106,14 +106,17 @@ namespace impl
 }
 
 
-template <class Cls = Stump<false>, bool EncodeLabels = true>
-using Boosting = impl::Boosting<Cls, EncodeLabels, false>;
+template <class Cls = impl::Stump<false>, bool EncodeLabels = true>
+using Boosting = impl::Classifier<impl::Boosting<Cls, false>, EncodeLabels>;
+
 
 
 namespace poly
 {
-    template <class Cls = Stump<false>, bool EncodeLabels = true>
-    using Boosting = impl::Boosting<Cls, EncodeLabels, true>;
+
+template <class Cls = impl::Stump<false>, bool EncodeLabels = true>
+using Boosting = impl::Classifier<impl::Boosting<Cls, true>, EncodeLabels>;
+
 }
 
 

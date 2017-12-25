@@ -1,52 +1,29 @@
 #ifndef CPP_ML_PROBIT_REGRESSION_H
 #define CPP_ML_PROBIT_REGRESSION_H
 
-#include "../Classifier.h"
-
-#include "../../Preprocessing/Preprocess.h"
-
-#include "../../Optimization/Newton/Newton.h"
-
-#include "../../Regularizers.h"
+#include "../LogisticRegression/LogisticRegressionTwoClass.h"
 
 
 namespace impl
 {
 
-template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, 
-          bool EncodeLabels = true, bool Polymorphic = false>
-struct ProbitRegression : PickClassifierBase<ProbitRegression<Regularizer, Optimizer, EncodeLabels, Polymorphic>,
-                                             EncodeLabels, Polymorphic>
+template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool Polymorphic = false>
+struct ProbitRegression : public impl::LogisticRegressionTwoClass<Regularizer, Optimizer, Polymorphic>
 {
-    USING_CLASSIFIER(PickClassifierBase<ProbitRegression<Regularizer, Optimizer, EncodeLabels, Polymorphic>, 
-                                        EncodeLabels, Polymorphic>);
+    USING_LOGISTIC_REGRESSION(impl::LogisticRegressionTwoClass<Regularizer, Optimizer, Polymorphic>);
+    
+    using BaseLogisticRegression::predictMargin, BaseLogisticRegression::predict, BaseLogisticRegression::w,
+          BaseLogisticRegression::intercept;
 
-    ProbitRegression (const Optimizer& optimizer = Optimizer(), double alpha = 1e-6) : alpha(alpha), optimizer(optimizer) {}
-    ProbitRegression (double alpha, const Optimizer& optimizer = Optimizer()) : alpha(alpha), optimizer(optimizer) {}
 
-
-    void fit_ (const Mat& X, const Veci& y)
+    void fit (const Mat& X, const Veci& y)
     {
         optimize(X, y);
 
-        
         intercept = w(N-1);
 
         w.conservativeResize(N-1);
     }
-
-
-
-    int predict_ (const Vec& x)
-    {
-        return predictMargin(x) > 0.0;
-    }
-
-    Veci predict_ (const Mat& X)
-    {
-        return (ArrayXd(predictMargin(X)) > 0.0).cast<int>();
-    }
-
 
 
     double predictProb (const Vec& x)
@@ -58,18 +35,6 @@ struct ProbitRegression : PickClassifierBase<ProbitRegression<Regularizer, Optim
     {
         return this->erf(predictMargin(X));
     }
-
-
-    double predictMargin (const Vec& x)
-    {
-        return w.dot(x) + intercept;
-    }
-
-    Vec predictMargin (const Mat& X)
-    {
-        return (X * w).array() + intercept;
-    }
-
 
 
     Vec erf (Vec x)
@@ -111,19 +76,6 @@ struct ProbitRegression : PickClassifierBase<ProbitRegression<Regularizer, Optim
 
         w = optimizer(func, grad, w);
     }
-
-
-
-    double alpha;
-
-    Optimizer optimizer;
-
-    Regularizer regularizer;
-
-
-    Vec w;
-
-    double intercept;
 };
 
 } // namespace impl
@@ -132,15 +84,14 @@ struct ProbitRegression : PickClassifierBase<ProbitRegression<Regularizer, Optim
 
 
 template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool EncodeLabels = true>
-using ProbitRegression = impl::ProbitRegression<L2, Optimizer, EncodeLabels, false>;
+using ProbitRegression = impl::Classifier<impl::ProbitRegression<L2, Optimizer, false>, EncodeLabels>;
 
 
 namespace poly
 {
 
 template <class Regularizer = L2, class Optimizer = Newton<Goldstein, CholeskyIdentity>, bool EncodeLabels = true>
-using ProbitRegression = impl::ProbitRegression<L2, Optimizer, EncodeLabels, true>;
-
+using ProbitRegression = impl::Classifier<impl::ProbitRegression<L2, Optimizer, true>, EncodeLabels>;
 } // namespace poly
 
 

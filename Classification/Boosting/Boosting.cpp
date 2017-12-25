@@ -26,7 +26,7 @@ int main ()
 
     double runTime = benchmark([&]
     {
-        bst.fit(X_train, y_train, 200);
+        bst.fit(X_train, y_train);
     });
 
     Veci y_pred = bst.predict(X_test);

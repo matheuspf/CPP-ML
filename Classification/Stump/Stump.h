@@ -9,20 +9,21 @@
 namespace impl
 {
 
-template <bool EncodeLabels = true, bool Polymorphic = false>
-struct Stump : public PickClassifierBase<Stump<EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>
+template <bool Polymorphic = false>
+struct Stump : public PickClassifier<Polymorphic>
 {
-    USING_CLASSIFIER(PickClassifierBase<Stump<EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>)
+    USING_CLASSIFIER(PickClassifier<Polymorphic>);
+    using BaseClassifier::BaseClassifier;
 
     Stump () : BaseClassifier(1, -1, false) {}
 
 
-    void fit_ (const Mat& X, const Veci& y)
+    void fit (const Mat& X, const Veci& y)
     {
-        fit_(X, y, Vec::Constant(M, 1.0 / M));
+        fit(X, y, Vec::Constant(M, 1.0 / M));
     }
 
-    void fit_ (const Mat& X_, const Veci& y_, const Vec& prob_)
+    void fit (const Mat& X_, const Veci& y_, const Vec& prob_)
     {
         Mat X = X_;
         Veci y = y_;
@@ -82,13 +83,13 @@ struct Stump : public PickClassifierBase<Stump<EncodeLabels, Polymorphic>, Encod
     }
 
 
-    int predict_ (const Vec& x)
+    int predict (const Vec& x)
     {
         return direction * (x(index) > stump ? positiveClass : negativeClass);
     }
 
 
-    Veci predict_ (const Mat& X)
+    Veci predict (const Mat& X)
     {
         Veci pred(X.rows());
 
@@ -112,14 +113,15 @@ struct Stump : public PickClassifierBase<Stump<EncodeLabels, Polymorphic>, Encod
 
 
 template <bool EncodeLabels = true>
-using Stump = impl::Stump<EncodeLabels, false>;
+using Stump = impl::Classifier<impl::Stump<false>, EncodeLabels>;
+
 
 
 namespace poly
 {
 
 template <bool EncodeLabels = true>
-using Stump = impl::Stump<EncodeLabels, true>;
+using Stump = impl::Classifier<impl::Stump<true>, EncodeLabels>;
 
 }
 

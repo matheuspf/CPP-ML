@@ -74,10 +74,10 @@ struct ClassifierImpl : public Impl
         fitImpl(X, y, addIntercept);
     }
 
-    template <typename... Args, std::enable_if_t<(sizeof...(Args) > 0)>* = nullptr>
-    void fit (const Mat& X, const Veci& y, Args&&... args)
+    template <typename U, typename... Args, std::enable_if_t<!std::is_same<std::decay_t<U>, bool>::value>* = nullptr>
+    void fit (const Mat& X, const Veci& y, U&& u, Args&&... args)
     {
-        fitImpl(X, y, true, std::forward<Args>(args)...);
+        fitImpl(X, y, true, std::forward<U>(u), std::forward<Args>(args)...);
     }
 
     template <typename... Args>
@@ -88,8 +88,7 @@ struct ClassifierImpl : public Impl
         M = X.rows();
         N = addIntercept ? X.cols() + 1 : X.cols();
 
-        return Impl::fit(addIntercept & needsIntercept ? addInterceptColumn(X) : X,
-                           y, std::forward<Args>(args)...);        
+        Impl::fit(addIntercept & needsIntercept ? addInterceptColumn(X) : X, y, std::forward<Args>(args)...);        
     }
 
 
@@ -126,8 +125,8 @@ struct Classifier : public ClassifierImpl<Impl>
         fitImpl(X, y, addIntercept);
     }
 
-    template <typename... Args, std::enable_if_t<(sizeof...(Args) > 0)>* = nullptr>
-    void fit (const Mat& X, const Veci& y, Args&&... args)
+    template <typename U, typename... Args, std::enable_if_t<!std::is_same<std::decay_t<U>, bool>::value>* = nullptr>
+    void fit (const Mat& X, const Veci& y, U&& u, Args&&... args)
     {
         fitImpl(X, y, true, std::forward<Args>(args)...);
     }
