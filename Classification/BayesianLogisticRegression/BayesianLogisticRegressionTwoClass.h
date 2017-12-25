@@ -10,25 +10,22 @@
 namespace impl
 {
 
-template <bool EncodeLabels = true, bool Polymorphic = false>
-struct BayesianLogisticRegressionTwoClass : virtual public PickClassifierBase<BayesianLogisticRegressionTwoClass<EncodeLabels, Polymorphic>, 
-                                                                      EncodeLabels, Polymorphic>,
-                                            public LogisticRegressionTwoClass<L2, Newton<>, EncodeLabels, Polymorphic>
+template <bool Polymorphic = false>
+struct BayesianLogisticRegressionTwoClass : public LogisticRegressionTwoClass<L2, Newton<>, Polymorphic>
 {
-    USING_CLASSIFIER(PickClassifierBase<BayesianLogisticRegressionTwoClass<EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
-    USING_LOGISTIC_REGRESSION(LogisticRegressionTwoClass<L2, Newton<>, EncodeLabels, Polymorphic>);
+    USING_LOGISTIC_REGRESSION(LogisticRegressionTwoClass<L2, Newton<>, Polymorphic>);
 
-    using BaseLogisticRegression::w, BaseLogisticRegression::intercept, BaseLogisticRegression::predict_, 
+    using BaseLogisticRegression::w, BaseLogisticRegression::intercept, BaseLogisticRegression::predict, 
           BaseLogisticRegression::predictMargin, BaseLogisticRegression::optimizeFunc;
 
 
-    void fit_ (const Mat& X, const Veci& y)
+    void fit (const Mat& X, const Veci& y)
     {
-        fit_(X, y, 1e-4, 1e-4, 50);
+        fit(X, y, 1e-4, 1e-4, 50);
     }
 
 
-    void fit_ (const Mat& X, const Veci& y, double gTol, double aTol = 1e-4, int maxIter = 50)
+    void fit (const Mat& X, const Veci& y, double gTol, double aTol = 1e-4, int maxIter = 50)
     {
         optimize(X, y, gTol, aTol, maxIter);
 
@@ -80,15 +77,15 @@ struct BayesianLogisticRegressionTwoClass : virtual public PickClassifierBase<Ba
 
 
 
-    int predict_ (const Vec& x)
-    {
-        return predictMargin(x) > 0.0;
-    }
+    // int predict (const Vec& x)
+    // {
+    //     return predictMargin(x) > 0.0;
+    // }
 
-    Veci predict_ (const Mat& X)
-    {
-        return (ArrayXd(predictMargin(X)) > 0.0).cast<int>();
-    }
+    // Veci predict (const Mat& X)
+    // {
+    //     return (ArrayXd(predictMargin(X)) > 0.0).cast<int>();
+    // }
 
 
 
@@ -121,16 +118,17 @@ struct BayesianLogisticRegressionTwoClass : virtual public PickClassifierBase<Ba
 
 
 template <bool EncodeLabels = true>
-using BayesianLogisticRegressionTwoClass = impl::BayesianLogisticRegressionTwoClass<EncodeLabels, false>;
+using BayesianLogisticRegressionTwoClass = impl::Classifier<impl::BayesianLogisticRegressionTwoClass<false>, EncodeLabels>;
 
 
 namespace poly
 {
 
 template <bool EncodeLabels = true>
-using BayesianLogisticRegressionTwoClass = impl::BayesianLogisticRegressionTwoClass<EncodeLabels, true>;
-    
+using BayesianLogisticRegressionTwoClass = impl::Classifier<impl::BayesianLogisticRegressionTwoClass<true>, EncodeLabels>;
+
 }
+              
 
 
 

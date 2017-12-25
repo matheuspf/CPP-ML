@@ -1,7 +1,6 @@
 #ifndef CPP_ML_BAYESIAN_LOGISTIC_REGRESSION_MULTICLASS_H
 #define CPP_ML_BAYESIAN_LOGISTIC_REGRESSION_MULTICLASS_H
 
-#include "../Classifier.h"
 
 #include "../LogisticRegression/LogisticRegressionMultiClass.h"
 
@@ -10,26 +9,24 @@
 namespace impl
 {
 
-template <bool EncodeLabels = true, bool Polymorphic = false>
-struct BayesianLogisticRegressionMultiClass : public PickClassifierBase<BayesianLogisticRegressionMultiClass<EncodeLabels, Polymorphic>, 
-                                                                        EncodeLabels, Polymorphic>,
-                                                     LogisticRegressionMultiClass<L2, Newton<>, EncodeLabels, Polymorphic>
+template <bool Polymorphic = false>
+struct BayesianLogisticRegressionMultiClass : public LogisticRegressionMultiClass<L2, Newton<>, Polymorphic>
 {
-    USING_CLASSIFIER(PickClassifierBase<BayesianLogisticRegressionMultiClass<EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
-    USING_LOGISTIC_REGRESSION(LogisticRegressionMultiClass<L2, Newton<>, EncodeLabels, Polymorphic>);
+    USING_LOGISTIC_REGRESSION(LogisticRegressionMultiClass<L2, Newton<>, Polymorphic>);
 
-    using BaseLogisticRegression::W, BaseLogisticRegression::intercept, BaseLogisticRegression::predictMargin;
+    using BaseLogisticRegression::W, BaseLogisticRegression::intercept, BaseLogisticRegression::predict, 
+          BaseLogisticRegression::predictMargin;
 
     using OptimizeFunc = typename BaseLogisticRegression::OptimizeFunc;
 
 
-    void fit_ (const Mat& X, const Veci& y)
+    void fit (const Mat& X, const Veci& y)
     {
-        fit_(X, y, 1e-6, 1e-4, 50);
+        fit(X, y, 1e-6, 1e-4, 50);
     }
 
 
-    void fit_ (const Mat& X, const Veci& y, double gTol, double aTol = 1e-4, int maxIter = 50)
+    void fit (const Mat& X, const Veci& y, double gTol, double aTol = 1e-4, int maxIter = 50)
     {
         M = X.rows(), N = X.cols();
 
@@ -100,23 +97,23 @@ struct BayesianLogisticRegressionMultiClass : public PickClassifierBase<Bayesian
 
 
 
-    int predict_ (const Vec& x)
-    {
-        Vec vals = predictMargin(x);
+    // int predict (const Vec& x)
+    // {
+    //     Vec vals = predictMargin(x);
         
-        return std::max_element(std::begin(vals), std::end(vals)) - std::begin(vals);
-    }
+    //     return std::max_element(std::begin(vals), std::end(vals)) - std::begin(vals);
+    // }
 
-    Veci predict_ (const Mat& X)
-    {
-        Mat vals = predictMargin(X);
-        vals.transposeInPlace();
+    // Veci predict (const Mat& X)
+    // {
+    //     Mat vals = predictMargin(X);
+    //     vals.transposeInPlace();
 
-        return Veci::NullaryExpr(X.rows(), [&](int i)
-        {
-            return std::max_element(&vals.col(i)(0), &vals.col(i)(0) + numClasses) - &vals.col(i)(0);
-        });
-    }
+    //     return Veci::NullaryExpr(X.rows(), [&](int i)
+    //     {
+    //         return std::max_element(&vals.col(i)(0), &vals.col(i)(0) + numClasses) - &vals.col(i)(0);
+    //     });
+    // }
 
 
 
@@ -140,14 +137,14 @@ struct BayesianLogisticRegressionMultiClass : public PickClassifierBase<Bayesian
 
 
 template <bool EncodeLabels = true>
-using BayesianLogisticRegressionMultiClass = impl::BayesianLogisticRegressionMultiClass<EncodeLabels, false>;
+using BayesianLogisticRegressionMultiClass = impl::Classifier<impl::BayesianLogisticRegressionMultiClass<false>, EncodeLabels>;
 
 
 namespace poly
 {
 
 template <bool EncodeLabels = true>
-using BayesianLogisticRegressionMultiClass = impl::BayesianLogisticRegressionMultiClass<EncodeLabels, true>;
+using BayesianLogisticRegressionMultiClass = impl::Classifier<impl::BayesianLogisticRegressionMultiClass<true>, EncodeLabels>;
     
 }
 

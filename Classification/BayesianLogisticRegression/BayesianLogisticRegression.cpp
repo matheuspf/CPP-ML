@@ -1,6 +1,4 @@
-#include "BayesianLogisticRegressionTwoClass.h"
-
-#include "BayesianLogisticRegressionMultiClass.h"
+#include "BayesianLogisticRegression.h"
 
 #include "../../Preprocessing/Preprocess.h"
 
@@ -23,13 +21,13 @@ int main ()
     //X = polyExpansion(X, 2, true);
 
 
-    auto [X, y] = pickTarget(readMat("../../Data/Wine.txt", ','), 0);
-    // auto [X, y] = pickTarget(readMat("../../Data/mushroom.txt", ','), 0);
+    //auto [X, y] = pickTarget(readMat("../../Data/Wine.txt", ','), 0);
+    auto [X, y] = pickTarget(readMat("../../Data/mushroom.txt", ','), 0);
 
 
-    // OneHotEncoding ohe;
+    OneHotEncoding ohe;
 
-    // X = ohe.fitTransform(X);
+    X = ohe.fitTransform(X);
 
 
 
@@ -37,7 +35,7 @@ int main ()
 
 
 
-    BayesianLogisticRegressionMultiClass<> blr;
+    BayesianLogisticRegression<> blr;
 
     double runtime = benchmark([&]
     {
@@ -49,11 +47,11 @@ int main ()
 
 
 
-    //db("a:  ", blr.alpha, "\n");
+    //db("a:  ", dynamic_cast<poly::BayesianLogisticRegressionMultiClass<false>&>(*blr.impl).alpha, "\n");
     //db("w:  ", blr.w.transpose(), "\n");
 
-    db(y_test.transpose());
-    db(y_pred.transpose(), "\n");
+    //db(y_test.transpose());
+    //db(y_pred.transpose(), "\n");
 
 
     db("Train error:    ", (y_train.array() == y_pred_train.array()).cast<double>().sum() / y_train.rows(), "\n");

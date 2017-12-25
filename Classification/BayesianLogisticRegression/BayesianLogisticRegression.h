@@ -1,13 +1,17 @@
 #ifndef CPP_ML_LOGISTIC_REGRESSION_H
 #define CPP_ML_LOGISTIC_REGRESSION_H
 
+
+#include "../LogisticRegression/LogisticRegression.h"
+
 #include "BayesianLogisticRegressionTwoClass.h"
 
 #include "BayesianLogisticRegressionMultiClass.h"
 
-#include "../OVA/OVA.h"
 
-#include "../OVO/OVO.h"
+//#include "../OVA/OVA.h"
+
+//#include "../OVO/OVO.h"
 
 
 
@@ -15,63 +19,38 @@
 namespace impl
 {
 
-template <bool EncodeLabels = true, bool Polymorphic = false>
-struct BayesianLogisticRegression : public PickClassifierBase<BayesianLogisticRegression<EncodeLabels, Polymorphic>, 
-                                                              EncodeLabels, Polymorphic>
+template <bool Polymorphic = false>
+struct BayesianLogisticRegression : public PickClassifier<Polymorphic>
 {
-    USING_CLASSIFIER(PickClassifierBase<BayesianLogisticRegression<EncodeLabels, Polymorphic>, EncodeLabels, Polymorphic>);
+    USING_CLASSIFIER(PickClassifier<Polymorphic>);
+    using BaseClassifier::BaseClassifier;
 
 
-    BayesianLogisticRegression (std::string multiClassType = "Multi") : impl(nullptr), multiClassType(multiClassType) {}
 
-    BayesianLogisticRegression(const BayesianLogisticRegression& lr) : impl(lr.impl ? lr.impl->clone() : nullptr), 
-                                                                       alpha(lr.alpha), multiClassType(lr.multiClassType) {}
-
-    BayesianLogisticRegression& operator= (const BayesianLogisticRegression& lr)
-    {
-        if(lr.impl)
-            impl = std::unique_ptr<poly::Classifier<false>>(lr.impl->clone());
-
-        alpha = lr.alpha;
-        multiClassType = lr.multiClassType;
-    }
-
-
-    void fit_ (const Mat& X, const Veci& y)
+    void fit (const Mat& X, const Veci& y)
     {
         if(numClasses == 2)
             impl = std::make_unique<poly::BayesianLogisticRegressionTwoClass<false>>();
         
         else
-        {
-            if(multiClassType == "OVA")
-                impl = std::make_unique<OVA<poly::BayesianLogisticRegressionTwoClass<false>, false>>();
+            impl = std::make_unique<poly::BayesianLogisticRegressionMultiClass<false>>();
 
-            else if(multiClassType == "OVO")
-                impl = std::make_unique<OVO<poly::BayesianLogisticRegressionTwoClass<false>, false>>();
-
-            else if(multiClassType == "Multi")
-                impl = std::make_unique<poly::BayesianLogisticRegressionMultiClass<false>>();
-
-            else
-                assert(0 && (string("Multi-class type is invalid:  ") + multiClassType).c_str());
-        }
         
         impl->numClasses = numClasses;
 
-        impl->fit_(X, y);
+        impl->fit(X, y, false);
     }
 
 
 
-    int predict_ (const Vec& x)
+    int predict (const Vec& x)
     {
-        return impl->predict_(x);
+        return impl->predict(x);
     }
 
-    Veci predict_ (const Mat& X)
+    Veci predict (const Mat& X)
     {
-        return impl->predict_(X);
+        return impl->predict(X);
     }
 
 
@@ -99,12 +78,7 @@ struct BayesianLogisticRegression : public PickClassifierBase<BayesianLogisticRe
     
 
     
-    std::unique_ptr<poly::Classifier<false>> impl;
-
-
-    double alpha;
-
-    std::string multiClassType;
+    std::unique_ptr<poly::Classifier> impl;
 };
 
 } // namespace impl
@@ -112,13 +86,13 @@ struct BayesianLogisticRegression : public PickClassifierBase<BayesianLogisticRe
 
 
 template <bool EncodeLabels = true>
-using BayesianLogisticRegression = impl::BayesianLogisticRegression<EncodeLabels, false>;
+using BayesianLogisticRegression =  impl::Classifier<impl::BayesianLogisticRegression<false>, EncodeLabels>;
 
 namespace poly
 {
 
 template <bool EncodeLabels = true>
-using BayesianLogisticRegression = impl::BayesianLogisticRegression<EncodeLabels, true>;
+using BayesianLogisticRegression =  impl::Classifier<impl::BayesianLogisticRegression<true>, EncodeLabels>;
 
 } // namespace poly
 
