@@ -13,8 +13,11 @@
 template <class ClassConditional>
 struct GenerativeModel
 {
-    template <typename T>
-    GenerativeModel& fit (const MatX<T>& X, Veci y, bool sharedVariance = false)
+    GenerativeModel () = default;
+
+
+    template <typename T, typename... Args>
+    GenerativeModel& fit (const MatX<T>& X, Veci y, Args&&... args)
     {
         M = X.rows(), N = X.cols();
 
@@ -22,7 +25,7 @@ struct GenerativeModel
 
         classPrior.params(classCount);
 
-        classConditionals.resize(numClasses);
+        classConditionals.resize(numClasses, std::forward<Args>(args)...);
 
         
         for(int k = 0; k < numClasses; ++k)

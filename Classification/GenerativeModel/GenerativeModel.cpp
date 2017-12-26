@@ -1,7 +1,13 @@
 #include "GenerativeModel.h"
 #include <gnuplot-iostream.h>
 
+#include "../../Preprocessing/Preprocess.h"
+
+#include "../../Preprocessing/ModelSelection.h"
+
 #include "../../Distributions/Student/Student.h"
+
+#include "../../Distributions/KernelDensity/KernelDensity.h"
 
 
 struct Plotting
@@ -79,9 +85,75 @@ void test1 ()
 }
 
 
+
+void test2 ()
+{
+    // auto [X, y] = pickTarget(readMat("../../Data/mushroom.txt", ','), 0);
+
+    // OneHotEncoding ohe;
+    // X = ohe.fitTransform(X);
+
+
+    auto [X, y] = pickTarget(readMat("../../Data/Wine.txt", ','), 0);
+
+
+    // Mat X = readMat("../../Data/Wine.txt", ',');
+
+    // X = X.block(0, 0, 130, X.cols()-1);
+
+    // Veci y = X.col(0).cast<int>();
+
+    // X = X.block(0, 1, X.rows(), X.cols()-1);
+
+
+
+    auto [X_train, y_train, X_test, y_test]  = trainTestSplit(X, y, 0.5, 1);
+
+
+    Standardize stz;
+    X_train = stz.fitTransform(X_train);
+    X_test = stz.transform(X_test);
+    
+
+
+    GenerativeModel<KernelDensity> genModel;
+
+
+    genModel.fit(X_train, y_train, KernelDensity(5.0));
+
+
+    // vector<double> sigmas;
+
+    // for(double x = 0.5; x <= 10.0; x += 0.2)
+    //     sigmas.pb(x);
+
+    // auto gs = makeGridsearchCV(genModel, make_pair([](auto& cls, double s){ cls.sigma = s; }, sigmas), 5, Accuracy());
+    
+    // gs.fit(X_train, y_train);
+
+    // genModel = gs.bestEstimator;
+
+    // genModel.fit(X_train, y_train);
+
+
+
+    Veci y_pred_train = genModel.predict(X_train);
+
+    Veci y_pred = genModel.predict(X_test);
+
+
+    db("Sigma:  ", genModel.classConditionals[0].sigma, "\n");
+
+    db("Train:  ", (y_pred_train.array() == y_train.array()).cast<double>().sum() / y_train.rows());
+    db("Test:  ", (y_pred.array() == y_test.array()).cast<double>().sum() / y_test.rows());
+}
+
+
+
+
 int main ()
 {
-    test1();
+    test2();
 
 
     return 0;
