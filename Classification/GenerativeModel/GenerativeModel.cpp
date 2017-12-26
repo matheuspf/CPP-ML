@@ -9,6 +9,9 @@
 
 #include "../../Distributions/KernelDensity/KernelDensity.h"
 
+#include "../../Distributions/KNN/KNN.h"
+
+
 
 struct Plotting
 {
@@ -89,6 +92,7 @@ void test1 ()
 void test2 ()
 {
     // auto [X, y] = pickTarget(readMat("../../Data/mushroom.txt", ','), 0);
+    // // auto [X, y] = pickTarget(readMat("../../Data/abalone.txt", ','), 0);
 
     // OneHotEncoding ohe;
     // X = ohe.fitTransform(X);
@@ -107,7 +111,7 @@ void test2 ()
 
 
 
-    auto [X_train, y_train, X_test, y_test]  = trainTestSplit(X, y, 0.5, 1);
+    auto [X_train, y_train, X_test, y_test] = trainTestSplit(X, y, 0.5, 1);
 
 
     Standardize stz;
@@ -116,10 +120,14 @@ void test2 ()
     
 
 
-    GenerativeModel<KernelDensity> genModel;
+    // GenerativeModel<KernelDensity> genModel;
 
+    // genModel.fit(X_train, y_train, KernelDensity(5.0));
 
-    genModel.fit(X_train, y_train, KernelDensity(5.0));
+    
+    GenerativeModel<KNN> genModel;
+
+    genModel.fit(X_train, y_train, KNN(3));
 
 
     // vector<double> sigmas;
@@ -142,7 +150,7 @@ void test2 ()
     Veci y_pred = genModel.predict(X_test);
 
 
-    db("Sigma:  ", genModel.classConditionals[0].sigma, "\n");
+    //db("Sigma:  ", genModel.classConditionals[0].sigma, "\n");
 
     db("Train:  ", (y_pred_train.array() == y_train.array()).cast<double>().sum() / y_train.rows());
     db("Test:  ", (y_pred.array() == y_test.array()).cast<double>().sum() / y_test.rows());
