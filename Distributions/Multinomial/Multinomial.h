@@ -57,7 +57,7 @@ struct Multinomial
 	}
 
 	
-	void params (Vec mu_)
+	void params (const Vec& mu_)
 	{
 		mu = mu_;
 

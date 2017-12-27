@@ -146,7 +146,7 @@ struct GridSearchCV
         for(const auto& x : std::get<I>(paramGrid).second)
         {
             std::get<I>(paramGrid).first(estimator, x);
-
+        
             loopGrid<I+1>(f);
         }
     }
@@ -154,9 +154,7 @@ struct GridSearchCV
     template <int I, class F, std::enable_if_t<(I == std::tuple_size_v<ParamGrid>), int> = 0>
     void loopGrid (F f)
     {
-        Estimator est = estimator;
-
-        f(est);
+        f(estimator);
     }
 
 

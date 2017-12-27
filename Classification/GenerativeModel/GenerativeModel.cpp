@@ -127,30 +127,33 @@ void test2 ()
     
     GenerativeModel<KNN> genModel;
 
-    genModel.fit(X_train, y_train, KNN(3));
-
-
-    // vector<double> sigmas;
-
-    // for(double x = 0.5; x <= 10.0; x += 0.2)
-    //     sigmas.pb(x);
-
-    // auto gs = makeGridsearchCV(genModel, make_pair([](auto& cls, double s){ cls.sigma = s; }, sigmas), 5, Accuracy());
     
-    // gs.fit(X_train, y_train);
+    //genModel.fit(X_train, y_train);
 
-    // genModel = gs.bestEstimator;
 
-    // genModel.fit(X_train, y_train);
+    vector<int> Ks;
 
+    for(int k = 1; k <= 10; ++k)
+        Ks.pb(k);
+
+    auto gs = makeGridsearchCV(genModel, make_pair([](auto& cls, int k){ cls.baseConditional.K = k; }, Ks), 5, Accuracy());
+    
+    gs.fit(X_train, y_train);
+
+    genModel = gs.bestEstimator;
+
+    genModel.fit(X_train, y_train);
+
+    
 
 
     Veci y_pred_train = genModel.predict(X_train);
 
     Veci y_pred = genModel.predict(X_test);
 
-
-    //db("Sigma:  ", genModel.classConditionals[0].sigma, "\n");
+    
+    //db("Sigma:  ", genModel.baseConditional.sigma, "\n");
+    db("K:   ", genModel.baseConditional.K, "\n");
 
     db("Train:  ", (y_pred_train.array() == y_train.array()).cast<double>().sum() / y_train.rows());
     db("Test:  ", (y_pred.array() == y_test.array()).cast<double>().sum() / y_test.rows());

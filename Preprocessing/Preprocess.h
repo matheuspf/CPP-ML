@@ -312,12 +312,11 @@ Mat polyExpansion (const Mat& X, int degree = 2, bool correlation = false)
 template <class T = int>
 struct LabelEncoder
 {
-	LabelEncoder& fit (const VecX<T>& x)
+	LabelEncoder& fit (const VecX<T>& x, bool countClasses = false)
 	{
 		numClasses = 0;
 		labelSet.clear();
 		labelMap.clear();
-		labelOrder.clear();
 
 		std::for_each(std::begin(x), std::end(x), [&](const T& t)
 		{
@@ -386,13 +385,27 @@ struct LabelEncoder
 	}
 
 
+	
+	std::vector<int> countClasses (const Veci& x)
+	{
+		std::map<int, int> classMap;
+
+		std::for_each(std::begin(x), std::end(x), [&](const T& t){ classMap[t]++; });
+
+		std::vector<int> classCount(classMap.size());
+
+        std::transform(classMap.begin(), classMap.end(), classCount.begin(), [](const auto& p){ return p.second; });
+
+		return classCount;
+	}
+
+
+
 	int numClasses;
 
 	std::set<T> labelSet;
 
 	std::unordered_map<T, int> labelMap;
-
-	std::vector<T> labelOrder;
 
 	std::unordered_map<int, T> reverseMap;
 };

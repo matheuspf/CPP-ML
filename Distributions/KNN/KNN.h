@@ -12,15 +12,18 @@ struct KNN
 {
     KNN (int K = 3) : K(K) {}
 
-    KNN (const KNN& kd) : X(kd.X), K(kd.K), 
-    kdTree(kd.kdTree ? std::make_unique<nanoflann::KDTreeEigenMatrixAdaptor<Mat>>(kd.X, 10) : nullptr) {}
+    KNN (const KNN& kd) : X(kd.X), K(kd.K)
+    {
+        update();
+    }
 
 
     KNN& operator = (const KNN& kd)
     {
         X = kd.X;
         K = kd.K;
-        kdTree = kd.kdTree ? std::make_unique<nanoflann::KDTreeEigenMatrixAdaptor<Mat>>(kd.X, 10) : nullptr;
+
+        update();
     }
 
 

@@ -1,129 +1,95 @@
 #ifndef CPP_ML_GENERATIVE_MODEL_H
 #define CPP_ML_GENERATIVE_MODEL_H
 
-#include "../../Modelo.h"
+#include "../Classifier.h"
 
 #include "../../Distributions/Gaussian/Gaussian.h"
 
 #include "../../Distributions/Multinomial/Multinomial.h"
 
 
-
-
-template <class ClassConditional>
-struct GenerativeModel
+namespace impl
 {
-    GenerativeModel () = default;
+
+template <class ClassConditional, bool Polymorphic = false>
+struct GenerativeModel : public PickClassifier<Polymorphic>
+{
+    USING_CLASSIFIER(PickClassifier<Polymorphic>);
+
+    template <typename... Args>
+    GenerativeModel (Args&&... args) : baseConditional(std::forward<Args>(args)...) {}
 
 
-    template <typename T, typename... Args>
-    GenerativeModel& fit (const MatX<T>& X, Veci y, Args&&... args)
+    void fit (const Mat& X, const Veci& y)
     {
-        M = X.rows(), N = X.cols();
-
-        classMapping(y);
+        std::vector<int> classCount = lenc.countClasses(y);
 
         classPrior.params(classCount);
 
-        classConditionals.resize(numClasses, std::forward<Args>(args)...);
-
+        classConditionals.resize(numClasses, baseConditional);
+    
         
         for(int k = 0; k < numClasses; ++k)
         {
-            MatX<T> Xk(classCount[k], N);
+            Mat Xk(classCount[k], N);
 
             for(int i = 0, j = 0; i < M; ++i) if(y(i) == k)
                 Xk.row(j++) = X.row(i);
-
+            
             classConditionals[k].fit(Xk);
         }
-
-
-        return *this;
     }
 
 
-    template <typename T>
-    int predict (const VecX<T>& x)
+    int predict (const Vec& x)
     {
         int label = 0;
         double bestPosterior = std::numeric_limits<double>::min();
 
-        //cout << x.transpose() << "        ";
-
         for(int k = 0; k < numClasses; ++k)
         {
             double posterior = classPrior(k) * classConditionals[k](x);
-
-            //cout << classPrior(k) << "   " << classConditionals[k](x) << "              ";
 
             if(posterior > bestPosterior)
             {
                 bestPosterior = posterior;
                 label = k;
             }
-        }//db("\n");
-
-        return classReverseMap[label];
-    }
-
-
-    template <typename T>
-    Veci predict (const MatX<T>& X)
-    {
-        Veci res(X.rows());
-
-        for(int i = 0; i < res.rows(); ++i)
-            res(i) = predict(VecX<T>(X.row(i)));
-        
-        return res;
-    }
-
-
-    void classMapping (Veci& y)
-    {
-        classMap.clear();
-        classReverseMap.clear();
-        classCount.clear();
-        numClasses = 0;
-
-        for(int i = 0; i < y.rows(); ++i)
-        {
-            if(classMap.find(y(i)) == classMap.end())
-            {
-                classMap[y(i)] = numClasses++;
-
-                classCount.push_back(0);
-            }
-
-            int label = classMap[y(i)];
-
-            classReverseMap[label] = y(i);
-            
-            y(i) = label;
-            
-            classCount[y(i)]++;
         }
+
+        return label;
+    }
+
+
+    Veci predict (const Mat& X)
+    {
+        return Veci::NullaryExpr(X.rows(), [&](int i){ return predict(Vec(X.row(i))); });
     }
 
 
 
-
-    int M, N;
+    ClassConditional baseConditional;
 
     std::vector<ClassConditional> classConditionals;
 
     Multinomial classPrior;
-
-
-    std::unordered_map<int, int> classMap;
-    std::unordered_map<int, int> classReverseMap;
-
-    std::vector<int> classCount;
-
-    int numClasses;
 };
 
+} // namespace impl
+
+
+
+template <class ClassConditional, bool EncodeLabels = true>
+using GenerativeModel = impl::Classifier<impl::GenerativeModel<ClassConditional, false>, EncodeLabels>;
+
+
+namespace poly
+{
+
+template <class ClassConditional, bool EncodeLabels = true>
+using GenerativeModel = impl::Classifier<impl::GenerativeModel<ClassConditional, false>, EncodeLabels>;
+
+}
 
 
 #endif // CPP_ML_GENERATIVE_MODEL_H

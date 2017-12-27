@@ -17,31 +17,7 @@ struct LogisticRegressionTwoClass : public LogisticRegressionBase<Regularizer, O
         
     void fit (const Mat& X, const Veci& y)
     {
-        M = X.rows(), N = X.cols();
-
-
-        auto func = [&](const Vec& w) -> double
-        {
-            ArrayXd sig = sigmoid((X * w).array());
-
-            return -(y.array().cast<double>() * log(sig) + (1.0 - y.array().cast<double>()) * log(1.0 - sig)).sum()
-                    + 0.5 * alpha * regularizer(w);
-                    //+ 0.5 * alpha * regularizer(Vec(w.head(N-1)));
-        };
-
-        auto grad = [&](const Vec& w) -> Vec
-        {
-            return X.transpose() * (sigmoid((X * w).array()).matrix() - y.cast<double>()) +
-                    0.5 * alpha * regularizer.gradient(w);
-        };
-
-
-        // w = Vec::Constant(N, 0.0);
-        
-        // w = optimizer(func, grad, w);
-
         optimize(X, y, 1e-8);
-
 
         intercept = w(N-1);
 

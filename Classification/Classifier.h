@@ -19,7 +19,8 @@
 
 #define USING_CLASSIFIER(...) USING_CLASSIFIER_BASE(__VA_ARGS__);   \
                               using BaseClassifier::fit,            \
-                                    BaseClassifier::predict;
+                                    BaseClassifier::predict,        \
+                                    BaseClassifier::polymorphic;
 
 
 
@@ -201,6 +202,7 @@ struct Classifier : public impl::ClassifierBase
     USING_CLASSIFIER_BASE(impl::ClassifierBase);
     using impl::ClassifierBase::ClassifierBase;
 
+    enum { polymorphic = false };
 
     
     template <bool T = false>
@@ -233,6 +235,8 @@ struct Classifier : public impl::ClassifierBase
 {
     USING_CLASSIFIER_BASE(impl::ClassifierBase);
     using impl::ClassifierBase::ClassifierBase;
+    
+    enum { polymorphic = true };
 
 
     virtual void fit (const Mat&, const Veci&, bool = true) = 0;
