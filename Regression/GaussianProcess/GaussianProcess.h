@@ -1,171 +1,103 @@
-#ifndef ML_GAUSSIAN_PROCESS_H
-#define ML_GAUSSIAN_PROCESS_H
+#ifndef CPP_ML_GAUSSIAN_PROCESS_H
+#define CPP_ML_GAUSSIAN_PROCESS_H
 
-#include "../../Modelo.h"
+#include "../Regressor.h"
 
-//#include "../../Optimization/Newton/Newton.h"
-
-//#include "../../Optimization/CG/CG.h"
-
-#include "../../Optimization/MDE/MDE.h"
-
-#include "../../Kernels.h"
+#include "Kernel.h"
+#include "Solver.h"
 
 
-
-
-template <class Kernel = RBFKernel>
-struct GaussianProcess
+namespace impl
 {
-	GaussianProcess (const Kernel& kernel = Kernel()) : kernel(kernel) {}
+
+template <class Kernel = ExponentialKernel, class Solver = Invert, bool Polymorphic = false>
+struct GaussianProcess : public PickRegressor<GaussianProcess<Kernel, Solver, Polymorphic>, Polymorphic>
+{
+    USING_REGRESSOR(PickRegressor<GaussianProcess<Kernel, Solver, Polymorphic>, Polymorphic>);
+
+    GaussianProcess (const Kernel& kernel = Kernel(), const Solver solver = Solver(), double beta = 1.0) : 
+                     BaseRegressor(false), beta(beta), kernel(kernel), solver(solver) {}
+
+    GaussianProcess (double beta, const Kernel& kernel = Kernel(), const Solver solver = Solver()) : 
+                     BaseRegressor(false), beta(beta), kernel(kernel), solver(solver) {}
+    
 
 
-	void fit (Mat X_, Vec y_)
-	{
-		X = move(X_);
-		y = move(y_);
+    void fit (Mat&& X_, Vec&& y_)
+    {
+        X = std::move(X_);
+        y = std::move(y_);
 
-		X.conservativeResize(Eigen::NoChange, X.cols()+1);
-		X.col(X.cols()-1).array() = 1.0;
+        fitImpl();   
+    }
 
-		M = X.rows(), N = X.cols();
+    void fit (const Mat& X_, const Vec& y_)
+    {
+        X = X_;
+        y = y_;
 
-		optSigmas();
+        fitImpl();
+    }
+    
 
-		Mat K = kernel(X);
+    void fitImpl ()
+    {
+        //optimize(X, y);
 
-		A = (K + (sigma / sigmaPrior) * Mat::Identity(M, M)).inverse();
-		
-		AXw = A * K * y;
-	}
+        C = kernel(X, X);
+        
+        C.diagonal().array() += (1.0 / beta);
 
-
-	double operator () (Vec x)
-	{
-		x.conservativeResize(x.rows() + 1);
-		x(x.rows() - 1) = 1.0;
-
-		Vec k = kernel(X, x);
-
-		return (sigmaPrior / sigma) * (y.dot(k) - k.dot(AXw));
-	}
-
-	// Vec operator () (const Mat& X)
-	// {
-	// }
-
-
-
-
-	// void optSigmas ()
-	// {
-	// 	// sigma = 1.0;
-	// 	// sigmaPrior = 1e5;
-	// 	// kernel.gamma = 1.0;
-	// 	// return;
+        C = solver(C);
+    }
 
 
 
-	// 	auto func = [&](const Vec& x) -> double
-	// 	{
-	// 		double sig = x(0), sigP = x(1), gamma = x(2);
+    double predict (const Vec& x)
+    {
+        return (kernel(X, x).transpose() * C).dot(y);
+    }
 
-	// 		Kernel kernel(gamma);
-
-	// 		Mat A = sigP * kernel(X) + sig * Mat::Identity(X.rows(), X.rows());
-
-
-	// 		return log(A.determinant()) + y.transpose() * A.inverse() * y;
-	// 	};
+    Vec predict (const Mat& X_)
+    {
+        return (kernel(X_, X) * C) * y;
+    }
 
 
-	// 	CG<> solver;
-	// 	//Newton<Goldstein, CholeskyIdentity> solver;
+    double variance (const Vec& x)
+    {
 
-	// 	Vec x = Vec::Constant(3, 1.0);
+    }
 
-	// 	x = solver(func, x);
+    Vec variance (const Mat& X)
+    {
 
-		// sigma = x(0);
-		// sigmaPrior = x(1);
-		// kernel.gamma = x(2);
-
-
-	// 	DB(x.transpose());
-	// }
+    }
 
 
 
-	void optSigmas ()
-	{
-		struct OptFunction : mde::Function<3>
-		{
-			OptFunction (GaussianProcess<RBFKernel>& gp) : gp(gp)
-			{
-				lowerBounds = {1e-2, 1e-2, 1e-2};
-				upperBounds = {1e0, 1e0, 1e0};
-			}
-		
-			double operator () (const Vector& x)
-			{
-				double sig = x[0], sigP = x[1], gamma = x[2];
-		
-				RBFKernel kernel(gamma);
-		
-				Mat A = sigP * kernel(gp.X) + sig * Mat::Identity(gp.X.rows(), gp.X.rows());
-		
-		
-				return log(A.determinant()) + gp.y.transpose() * A.inverse() * gp.y;
-			}
-		
-			GaussianProcess<RBFKernel>& gp;
-		};
+    Mat X;
+    Vec y;
 
-		mde::Parameters params;
-		params.popSize = 100;
-		params.children = 3;
-		params.maxIter = 1e1;
-		params.debug = true;
+    Mat C;
+    
 
-		mde::MDE<OptFunction> mde(params, OptFunction(*this));
-
-		auto x = mde();
-
-		sigma = x[0];
-		sigmaPrior = x[1];
-		kernel.gamma = x[2];
-
-		DB(sigma << "    " << sigmaPrior << "    " << kernel.gamma);
-		// DB(mde.function(x));
-	}
+    double alpha;
+    double beta;
 
 
+    Kernel kernel;
 
-	
-	
-
-
-	int M;
-	int N;
-
-
-	Mat X;
-	Vec y;
-
-	Mat A;
-
-	Vec AXw;
-
-	double sigma;
-	double sigmaPrior;
-
-	double bias, biasPrior = 1e-6;
-
-	Kernel kernel;
+    Solver solver;
 };
 
 
 
+}
 
 
-#endif // ML_GAUSSIAN_PROCESS_H
+
+
+
+
+#endif // CPP_ML_GAUSSIAN_PROCESS_H
