@@ -80,8 +80,7 @@ struct Regressor
 template <class Impl>
 struct Regressor : public impl::Regressor<Regressor<Impl>>
 {
-    USING_REGRESSOR(impl::Regressor<Regressor<Impl>>);
-    using impl::Regressor<Regressor<Impl>>::Regressor;
+    USING_REGRESSOR_BASE(impl::Regressor<Regressor<Impl>>);
 
     enum { polymorphic = false };
 
@@ -93,13 +92,13 @@ struct Regressor : public impl::Regressor<Regressor<Impl>>
     }
 
     template <bool T = false>
-    double predict (const Vec&)
+    double predict (const Vec&) const
     {
         static_assert(T, "predict method not defined");
     }
 
     template <bool T = false>
-    Vec predict (const Mat&)
+    Vec predict (const Mat&) const
     {
         static_assert(T, "predict (batch) method not defined");
     }
@@ -112,8 +111,7 @@ namespace poly
 
 struct Regressor : public impl::Regressor<Regressor>
 {
-    USING_REGRESSOR(impl::Regressor<Regressor>);
-    using impl::Regressor<Regressor>::Regressor;
+    USING_REGRESSOR_BASE(impl::Regressor<Regressor>);
 
     enum { polymorphic = false };
 
@@ -122,9 +120,9 @@ struct Regressor : public impl::Regressor<Regressor>
 
     // virtual void fit (const Mat&, const Vec&, const Vec&) {}
 
-    virtual double predict (const Vec&) = 0;
+    virtual double predict (const Vec&) const = 0;
 
-    virtual Vec predict (const Mat&) = 0;
+    virtual Vec predict (const Mat&) const = 0;
 
 
     //virtual Regressor* clone () const = 0;

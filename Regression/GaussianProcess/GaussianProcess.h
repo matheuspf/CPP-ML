@@ -3,6 +3,10 @@
 
 #include "../Regressor.h"
 
+#include "../../Optimization/CG/CG.h"
+#include "../../Optimization/BFGS/BFGS.h"
+#include "../../Optimization/Newton/Newton.h"
+
 #include "Kernel.h"
 #include "Solver.h"
 
@@ -28,7 +32,7 @@ struct GaussianProcess : public PickRegressor<GaussianProcess<Kernel, Solver, Po
         X = std::move(X_);
         y = std::move(y_);
 
-        fitImpl();   
+        fitImpl();
     }
 
     void fit (const Mat& X_, const Vec& y_)
@@ -40,39 +44,77 @@ struct GaussianProcess : public PickRegressor<GaussianProcess<Kernel, Solver, Po
     }
     
 
+
     void fitImpl ()
     {
-        //optimize(X, y);
+        update();
 
-        C = kernel(X, X);
+
+        Newton<Goldstein> opt;
+        //BFGS<> opt;
+        //CG<> opt;
+
+        opt.maxIterations = 10;
+
+        Vec x0 = Vec::Constant(5, -10.0);
+
+        x0 = opt([&](const Vec& z)
+        {
+            set(z);
+
+            return -logLikelihood();
+        }, x0);
         
-        C.diagonal().array() += (1.0 / beta);
-
-        C = solver(C);
+        set(x0);
     }
 
 
 
-    double predict (const Vec& x)
+    void set (const Vec& z)
     {
-        return (kernel(X, x).transpose() * C).dot(y);
+        beta = exp(z(0));
+        //kernel.phi(1) = exp(z(1));
+        kernel.set(exp(z.tail(z.rows() - 1).array()));
+
+        update();
     }
 
-    Vec predict (const Mat& X_)
+
+    void update ()
     {
-        return (kernel(X_, X) * C) * y;
+        C = kernel(X, X);
+        C.diagonal().array() += beta;
+        
+        w = solver(C, y);
     }
 
 
-    double variance (const Vec& x)
+
+    double predict (const Vec& x) const
     {
-
+        return kernel(X, x).dot(w);
     }
 
-    Vec variance (const Mat& X)
+    Vec predict (const Mat& X_) const
     {
-
+        return kernel(X_, X) * w;
     }
+
+
+    double variance (const Vec& x) const
+    {
+    }
+
+    Vec variance (const Mat& X) const
+    {
+    }
+
+
+    double logLikelihood () const
+    {
+        return -0.5 * (log(C.diagonal().array()).sum() + w.dot(y) + M * log(2*pi()));
+    }
+
 
 
 
@@ -80,23 +122,28 @@ struct GaussianProcess : public PickRegressor<GaussianProcess<Kernel, Solver, Po
     Vec y;
 
     Mat C;
+    Vec w;
     
-
-    double alpha;
     double beta;
 
-
     Kernel kernel;
-
     Solver solver;
 };
 
+} // namespace impl
 
+
+template <class Kernel = ExponentialKernel, class Solver = Invert>
+using GaussianProcess = impl::GaussianProcess<Kernel, Solver, false>;
+
+
+namespace poly
+{
+
+template <class Kernel = ExponentialKernel, class Solver = Invert>
+using GaussianProcess = impl::GaussianProcess<Kernel, Solver, true>;
 
 }
-
-
-
 
 
 

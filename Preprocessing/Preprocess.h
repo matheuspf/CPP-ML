@@ -413,21 +413,21 @@ struct LabelEncoder
 
 
 
-
-auto pickTarget (const Mat& X, int pos = 0)
+template <typename T = int>
+auto pickTarget (const Mat& X, int pos = 0, T = T{})
 {
 	Mat Z;
-	Veci y;
+	VecX<T> y;
 
 	if(pos == 0)
 	{
-		y = X.col(0).cast<int>();
+		y = X.col(0).cast<T>();
     	Z = X.block(0, 1, X.rows(), X.cols()-1);
 	}
 
 	else
 	{
-		y = X.col(X.cols()-1).cast<int>();
+		y = X.col(X.cols()-1).cast<T>();
 		Z = X.block(0, 0, X.rows(), X.cols()-1);
 	}
 
